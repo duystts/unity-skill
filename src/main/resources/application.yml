@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: unity-skill
+  jackson:
+    time-zone: UTC
+  profiles:
+    active: dev
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+app:
+  cors:
+    allowed-origins: http://localhost:3000
+  security:
+    cookie-secure: false
+  frontend-url: http://localhost:3000
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.unityskill: DEBUG
+    org.flywaydb: INFO

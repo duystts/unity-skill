@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/unityskill_dev?options=-c%20TimeZone%3DUTC
+    username: ${SPRING_DATASOURCE_USERNAME:unityskill}
+    password: ${SPRING_DATASOURCE_PASSWORD:unityskill_dev_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: true
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
+  flyway:
+    enabled: true
+  security:
+    user:
+      name: ignored
+      password: ignored
+
+jwt:
+  secret: ${JWT_SECRET:dev-secret-key-placeholder-minimum-256-bits-long}
+  access-token-expiry-ms: ${JWT_ACCESS_TOKEN_EXPIRY_MS:900000}
+  refresh-token-expiry-days: ${JWT_REFRESH_TOKEN_EXPIRY_DAYS:7}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.flywaydb: DEBUG
+
+# Asia/Saigon not recognized by PostgreSQL 16, UTC forced via JDBC connection param
