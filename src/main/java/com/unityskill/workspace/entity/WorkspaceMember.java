@@ -34,4 +34,8 @@ public class WorkspaceMember {
     @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;
+
+    /** Story 8.2: last time an MEMBER_INACTIVE notification was sent for this member. Null = never alerted. */
+    @Column(name = "last_inactivity_alerted_at")
+    private Instant lastInactivityAlertedAt;
 }

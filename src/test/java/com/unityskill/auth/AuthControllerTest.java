@@ -60,7 +60,7 @@ class AuthControllerTest {
 
     @Test
     void register_validRequest_returns201() throws Exception {
-        var user = new AuthUserResponse(UUID.randomUUID(), "test@example.com", "Test User");
+        var user = new AuthUserResponse(UUID.randomUUID(), "test@example.com", "Test User", "CHARACTER");
         var result = new AuthService.RegistrationResult(new RegisterResponse(user, "jwt-token"), "raw-token");
         when(authService.register(any())).thenReturn(result);
 
@@ -77,7 +77,7 @@ class AuthControllerTest {
 
     @Test
     void login_validCredentials_returns200() throws Exception {
-        var user = new AuthUserResponse(UUID.randomUUID(), "test@example.com", "Test User");
+        var user = new AuthUserResponse(UUID.randomUUID(), "test@example.com", "Test User", "CHARACTER");
         var result = new AuthService.LoginResult(new LoginResponse(user, "jwt-token"), "raw-token");
         when(authService.login(any())).thenReturn(result);
 
@@ -145,7 +145,7 @@ class AuthControllerTest {
     @Test
     void me_withValidToken_returns200() throws Exception {
         UUID userId = UUID.randomUUID();
-        var user = new AuthUserResponse(userId, "test@example.com", "Test User");
+        var user = new AuthUserResponse(userId, "test@example.com", "Test User", "CHARACTER");
 
         when(jwtUtil.isTokenValid("valid-token")).thenReturn(true);
         when(jwtUtil.extractUserId("valid-token")).thenReturn(userId.toString());

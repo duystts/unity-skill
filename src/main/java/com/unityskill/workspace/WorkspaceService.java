@@ -1,8 +1,11 @@
 package com.unityskill.workspace;
 
+import com.unityskill.common.exception.UnauthorizedAccessException;
 import com.unityskill.common.exception.WorkspaceNotFoundException;
 import com.unityskill.workspace.dto.CreateWorkspaceRequest;
 import com.unityskill.workspace.dto.WorkspaceResponse;
+import com.unityskill.workspace.dto.WorkspaceSettingsRequest;
+import com.unityskill.workspace.dto.WorkspaceSettingsResponse;
 import com.unityskill.workspace.entity.Workspace;
 import com.unityskill.workspace.entity.WorkspaceMember;
 import com.unityskill.workspace.entity.WorkspaceRole;
@@ -29,7 +32,7 @@ public class WorkspaceService {
                 .slug(generateSlug(req.name()))
                 .createdBy(creatorId)
                 .build();
-        workspace = workspaceRepository.save(workspace);
+        workspace = workspaceRepository.saveAndFlush(workspace);
 
         WorkspaceMember member = WorkspaceMember.builder()
                 .workspaceId(workspace.getId())
@@ -55,6 +58,32 @@ public class WorkspaceService {
         }
         return WorkspaceResponse.from(
                 workspaceRepository.findById(workspaceId).orElseThrow(WorkspaceNotFoundException::new)
+        );
+    }
+
+    /**
+     * Story 8.3 AC2: Allow PM/Admin to customize workload thresholds per workspace.
+     * Saves thresholds to the workspace row; subsequent getWorkload() reads them.
+     */
+    @Transactional
+    public WorkspaceSettingsResponse updateSettings(UUID workspaceId, UUID callerId,
+                                                    WorkspaceSettingsRequest request) {
+        WorkspaceMember caller = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, callerId)
+                .orElseThrow(() -> new UnauthorizedAccessException("Not a workspace member"));
+        if (caller.getRole() == WorkspaceRole.DEVELOPER) {
+            throw new UnauthorizedAccessException("Only PM or Admin can update workspace settings");
+        }
+
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(WorkspaceNotFoundException::new);
+
+        workspace.setOverloadedThreshold(request.overloadedThreshold());
+        workspace.setBalancedMinThreshold(request.balancedMinThreshold());
+        workspaceRepository.save(workspace);
+
+        return new WorkspaceSettingsResponse(
+                workspace.getOverloadedThreshold(),
+                workspace.getBalancedMinThreshold()
         );
     }
 

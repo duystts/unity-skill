@@ -1,11 +1,11 @@
 package com.unityskill.auth.entity;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -31,8 +31,14 @@ public class User {
 
     private String avatarUrl;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean isIncognito = false;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UiMode uiMode = UiMode.CHARACTER;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

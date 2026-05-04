@@ -37,6 +37,7 @@ public class AuthController {
                 "id", result.response().user().id(),
                 "email", result.response().user().email(),
                 "displayName", result.response().user().displayName(),
+                "uiMode", result.response().user().uiMode(),
                 "accessToken", result.response().accessToken()
             )
         ));
@@ -53,6 +54,7 @@ public class AuthController {
                 "id", result.response().user().id(),
                 "email", result.response().user().email(),
                 "displayName", result.response().user().displayName(),
+                "uiMode", result.response().user().uiMode(),
                 "accessToken", result.response().accessToken()
             )
         ));
@@ -84,7 +86,8 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("data", Map.of(
             "id", user.id(),
             "email", user.email(),
-            "displayName", user.displayName()
+            "displayName", user.displayName(),
+            "uiMode", user.uiMode()
         )));
     }
 

@@ -2,6 +2,8 @@ package com.unityskill.workspace;
 
 import com.unityskill.workspace.dto.CreateWorkspaceRequest;
 import com.unityskill.workspace.dto.WorkspaceResponse;
+import com.unityskill.workspace.dto.WorkspaceSettingsRequest;
+import com.unityskill.workspace.dto.WorkspaceSettingsResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -41,5 +43,19 @@ public class WorkspaceController {
             @AuthenticationPrincipal String userId) {
         WorkspaceResponse workspace = workspaceService.getWorkspace(workspaceId, UUID.fromString(userId));
         return ResponseEntity.ok(Map.of("data", workspace));
+    }
+
+    /**
+     * PATCH /api/v1/workspaces/{workspaceId}/settings
+     * Story 8.3 AC2: PM/Admin sets custom workload thresholds (overloadedThreshold, balancedMinThreshold).
+     */
+    @PatchMapping("/{workspaceId}/settings")
+    public ResponseEntity<Map<String, Object>> updateSettings(
+            @PathVariable UUID workspaceId,
+            @Valid @RequestBody WorkspaceSettingsRequest request,
+            @AuthenticationPrincipal String userId) {
+        WorkspaceSettingsResponse result = workspaceService.updateSettings(
+                workspaceId, UUID.fromString(userId), request);
+        return ResponseEntity.ok(Map.of("data", result));
     }
 }

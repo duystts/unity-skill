@@ -1,15 +1,15 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/unityskill_dev?options=-c%20TimeZone%3DUTC
-    username: ${SPRING_DATASOURCE_USERNAME:unityskill}
-    password: ${SPRING_DATASOURCE_PASSWORD:unityskill_dev_password}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     show-sql: true
   data:
     redis:
-      host: ${SPRING_REDIS_HOST:localhost}
-      port: ${SPRING_REDIS_PORT:6379}
+      host: ${SPRING_REDIS_HOST}
+      port: ${SPRING_REDIS_PORT}
   flyway:
     enabled: true
   security:
@@ -18,16 +18,38 @@ spring:
       password: ignored
 
 jwt:
-  secret: ${JWT_SECRET:dev-secret-key-placeholder-minimum-256-bits-long}
-  access-token-expiry-ms: ${JWT_ACCESS_TOKEN_EXPIRY_MS:900000}
-  refresh-token-expiry-days: ${JWT_REFRESH_TOKEN_EXPIRY_DAYS:7}
+  secret: ${JWT_SECRET}
+  access-token-expiry-ms: ${JWT_ACCESS_TOKEN_EXPIRY_MS}
+  refresh-token-expiry-days: ${JWT_REFRESH_TOKEN_EXPIRY_DAYS}
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT}
 
 logging:
   level:
     org.springframework.security: DEBUG
     org.flywaydb: DEBUG
 
+github:
+  client-id: ${GITHUB_CLIENT_ID}
+  client-secret: ${GITHUB_CLIENT_SECRET}
+  redirect-uri: ${GITHUB_REDIRECT_URI}
+  webhook-endpoint-url: ${GITHUB_WEBHOOK_ENDPOINT_URL}
+  frontend-redirect-base-url: ${GITHUB_FRONTEND_REDIRECT_BASE_URL}
+
+encryption:
+  secret: ${ENCRYPTION_SECRET}
+  salt: ${ENCRYPTION_SALT}
+
 # Asia/Saigon not recognized by PostgreSQL 16, UTC forced via JDBC connection param
+
+ai:
+  # Default: gemini (free tier — no credit card needed, get key at https://aistudio.google.com/apikey)
+  # To use Anthropic Claude: set ai.provider=anthropic and provide ANTHROPIC_API_KEY
+  provider: ${AI_PROVIDER}
+  gemini:
+    api-key: ${GEMINI_API_KEY}
+    model: ${GEMINI_MODEL}
+  anthropic:
+    api-key: ${ANTHROPIC_API_KEY}
+    model: ${ANTHROPIC_MODEL}

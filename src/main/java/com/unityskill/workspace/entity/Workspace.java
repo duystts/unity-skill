@@ -35,4 +35,14 @@ public class Workspace {
     @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;
+
+    /** Story 8.3: OVERLOADED threshold — members with > this many open tickets are OVERLOADED. Default 5. */
+    @Builder.Default
+    @Column(nullable = false)
+    private int overloadedThreshold = 5;
+
+    /** Story 8.3: BALANCED lower bound — members with >= this many open tickets are BALANCED. Default 2. */
+    @Builder.Default
+    @Column(nullable = false)
+    private int balancedMinThreshold = 2;
 }

@@ -49,20 +49,20 @@ class WorkspaceServiceTest {
     void createWorkspace_savesWorkspaceAndReturnsResponse() {
         var req = new CreateWorkspaceRequest("Test Team", "A test workspace");
         var saved = buildWorkspace();
-        when(workspaceRepository.save(any(Workspace.class))).thenReturn(saved);
+        when(workspaceRepository.saveAndFlush(any(Workspace.class))).thenReturn(saved);
         when(workspaceMemberRepository.save(any(WorkspaceMember.class))).thenReturn(new WorkspaceMember());
 
         WorkspaceResponse result = workspaceService.createWorkspace(req, CREATOR_ID);
 
         assertThat(result.name()).isEqualTo("Test Team");
         assertThat(result.id()).isEqualTo(WORKSPACE_ID.toString());
-        verify(workspaceRepository).save(any(Workspace.class));
+        verify(workspaceRepository).saveAndFlush(any(Workspace.class));
     }
 
     @Test
     void createWorkspace_savesAdminMember() {
         var req = new CreateWorkspaceRequest("Test Team", null);
-        when(workspaceRepository.save(any(Workspace.class))).thenReturn(buildWorkspace());
+        when(workspaceRepository.saveAndFlush(any(Workspace.class))).thenReturn(buildWorkspace());
         var memberCaptor = ArgumentCaptor.forClass(WorkspaceMember.class);
         when(workspaceMemberRepository.save(memberCaptor.capture())).thenReturn(new WorkspaceMember());
 
@@ -78,7 +78,7 @@ class WorkspaceServiceTest {
     void createWorkspace_generatesSlugFromName() {
         var req = new CreateWorkspaceRequest("My Awesome Team", null);
         var workspaceCaptor = ArgumentCaptor.forClass(Workspace.class);
-        when(workspaceRepository.save(workspaceCaptor.capture())).thenReturn(buildWorkspace());
+        when(workspaceRepository.saveAndFlush(workspaceCaptor.capture())).thenReturn(buildWorkspace());
         when(workspaceMemberRepository.save(any())).thenReturn(new WorkspaceMember());
 
         workspaceService.createWorkspace(req, CREATOR_ID);
