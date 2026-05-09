@@ -26,6 +26,9 @@ public class AuthController {
     @Value("${app.security.cookie-secure:false}")
     private boolean cookieSecure;
 
+    @Value("${jwt.refresh-token-expiry-days:7}")
+    private int refreshTokenExpiryDays;
+
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> register(
             @Valid @RequestBody RegisterRequest request,
@@ -98,13 +101,14 @@ public class AuthController {
         cookie.setHttpOnly(true);
         cookie.setSecure(cookieSecure);
         cookie.setPath("/api/v1/auth");
-        cookie.setMaxAge(7 * 24 * 3600);
+        cookie.setMaxAge(refreshTokenExpiryDays * 24 * 3600);
         response.addCookie(cookie);
     }
 
     private void clearRefreshCookie(HttpServletResponse response) {
         Cookie cookie = new Cookie("refreshToken", "");
         cookie.setHttpOnly(true);
+        cookie.setSecure(cookieSecure);
         cookie.setPath("/api/v1/auth");
         cookie.setMaxAge(0);
         response.addCookie(cookie);

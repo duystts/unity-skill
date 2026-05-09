@@ -2,6 +2,7 @@ package com.unityskill.common.exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -19,6 +20,19 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        String message = ex.getMessage() != null && ex.getMessage().contains("email")
+            ? "An account with this email already exists"
+            : "Data integrity violation";
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+            "status", 409,
+            "error", "EMAIL_ALREADY_EXISTS",
+            "message", message,
+            "timestamp", Instant.now().toString()
+        ));
+    }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<Map<String, Object>> handleEmailExists(EmailAlreadyExistsException ex) {

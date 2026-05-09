@@ -4,6 +4,7 @@ import com.unityskill.common.exception.AlreadyMemberException;
 import com.unityskill.common.exception.InvitationNotFoundException;
 import com.unityskill.common.exception.UnauthorizedAccessException;
 import com.unityskill.common.exception.WorkspaceNotFoundException;
+import com.unityskill.mail.MailService;
 import com.unityskill.workspace.dto.InvitationResponse;
 import com.unityskill.workspace.dto.InviteLinkResponse;
 import com.unityskill.workspace.entity.*;
@@ -23,18 +24,22 @@ public class InvitationService {
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
+    @Value("${app.invitation-expiry-days:7}")
+    private int invitationExpiryDays;
+
     private final WorkspaceInvitationRepository invitationRepository;
     private final WorkspaceMemberRepository memberRepository;
     private final WorkspaceRepository workspaceRepository;
+    private final MailService mailService;
 
     @Transactional
     public InvitationResponse inviteByEmail(UUID workspaceId, String email, UUID inviterId) {
         requireAdmin(workspaceId, inviterId);
-        workspaceRepository.findById(workspaceId)
+        Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(WorkspaceNotFoundException::new);
 
         String token = generateToken();
-        Instant expiresAt = Instant.now().plus(7, ChronoUnit.DAYS);
+        Instant expiresAt = Instant.now().plus(invitationExpiryDays, ChronoUnit.DAYS);
 
         WorkspaceInvitation invitation = WorkspaceInvitation.builder()
                 .workspaceId(workspaceId)
@@ -46,7 +51,11 @@ public class InvitationService {
                 .expiresAt(expiresAt)
                 .build();
 
-        invitation = invitationRepository.save(invitation);
+        invitation = invitationRepository.saveAndFlush(invitation);
+
+        String inviteUrl = frontendUrl + "/invite/" + token;
+        mailService.sendInvitationEmail(email, workspace.getName(), inviteUrl, expiresAt);
+
         return InvitationResponse.from(invitation);
     }
 
@@ -57,7 +66,7 @@ public class InvitationService {
                 .orElseThrow(WorkspaceNotFoundException::new);
 
         String token = generateToken();
-        Instant expiresAt = Instant.now().plus(7, ChronoUnit.DAYS);
+        Instant expiresAt = Instant.now().plus(invitationExpiryDays, ChronoUnit.DAYS);
 
         WorkspaceInvitation invitation = WorkspaceInvitation.builder()
                 .workspaceId(workspaceId)
@@ -68,7 +77,7 @@ public class InvitationService {
                 .expiresAt(expiresAt)
                 .build();
 
-        invitationRepository.save(invitation);
+        invitationRepository.saveAndFlush(invitation);
 
         String inviteUrl = frontendUrl + "/invite/" + token;
         return new InviteLinkResponse(token, inviteUrl, expiresAt.toString());

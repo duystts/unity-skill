@@ -55,6 +55,16 @@ public class TicketController {
         return ResponseEntity.ok(Map.of("data", ticket));
     }
 
+    @DeleteMapping("/{ticketId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteTicket(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID projectId,
+            @PathVariable UUID ticketId,
+            @AuthenticationPrincipal String userId) {
+        ticketService.deleteTicket(workspaceId, projectId, ticketId, UUID.fromString(userId));
+    }
+
     @PostMapping("/{ticketId}/claim")
     public ResponseEntity<Map<String, Object>> claimTicket(
             @PathVariable UUID workspaceId,

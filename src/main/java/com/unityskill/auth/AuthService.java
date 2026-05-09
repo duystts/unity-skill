@@ -103,7 +103,7 @@ public class AuthService {
             throw new TokenInactiveException();
         }
 
-        if (Duration.between(rt.getLastActiveAt(), Instant.now()).toHours() > 24) {
+        if (Duration.between(rt.getLastActiveAt(), Instant.now()).toDays() > refreshTokenExpiryDays) {
             refreshTokenRepository.delete(rt);
             throw new TokenInactiveException();
         }

@@ -167,6 +167,26 @@ public class TicketService {
         return TicketResponse.from(ticket);
     }
 
+    @Transactional
+    public void deleteTicket(UUID workspaceId, UUID projectId, UUID ticketId, UUID callerId) {
+        requirePmOrAdmin(workspaceId, callerId);
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+            .orElseThrow(TicketNotFoundException::new);
+
+        if (!ticket.getProjectId().equals(projectId)) {
+            throw new TicketNotFoundException();
+        }
+
+        ticketRepository.delete(ticket);
+
+        eventPublisher.publishToTopic(
+            "/topic/workspace/" + workspaceId + "/tickets",
+            "TICKET_DELETED",
+            Map.of("ticketId", ticketId.toString(), "projectId", projectId.toString())
+        );
+    }
+
     private void requireMember(UUID workspaceId, UUID userId) {
         if (!memberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
             throw new UnauthorizedAccessException("Not a workspace member");
