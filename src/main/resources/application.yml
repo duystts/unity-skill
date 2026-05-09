@@ -3,8 +3,6 @@ spring:
     name: unity-skill
   jackson:
     time-zone: UTC
-  profiles:
-    active: dev
   jpa:
     hibernate:
       ddl-auto: validate
@@ -22,6 +20,8 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 management:
   endpoints:
@@ -30,17 +30,22 @@ management:
         include: health,info
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized
 
 app:
   cors:
     allowed-origins: http://localhost:3000
   security:
-    cookie-secure: false
+    cookie-secure: true
   frontend-url: http://localhost:3000
+  mail:
+    from: ${MAIL_FROM:noreply@unityskill.app}
+    from-name: ${MAIL_FROM_NAME:unity_skill}
+  invitation-expiry-days: 7
 
 server:
   port: 8080
+  shutdown: graceful
 
 logging:
   level:

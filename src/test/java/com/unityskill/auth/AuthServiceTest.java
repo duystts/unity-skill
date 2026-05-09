@@ -3,6 +3,7 @@ package com.unityskill.auth;
 import com.unityskill.auth.dto.LoginRequest;
 import com.unityskill.auth.dto.RegisterRequest;
 import com.unityskill.auth.entity.RefreshToken;
+import com.unityskill.auth.entity.UiMode;
 import com.unityskill.auth.entity.User;
 import com.unityskill.common.exception.EmailAlreadyExistsException;
 import com.unityskill.common.exception.InvalidCredentialsException;
@@ -156,6 +157,21 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.refreshAccessToken("unknown-token"))
             .isInstanceOf(TokenInactiveException.class);
+    }
+
+    // ── UpdatePreferences ─────────────────────────────────────────────────────
+
+    @Test
+    void updatePreferences_success_savesAndReturnsUpdatedUser() {
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).email("a@b.com").displayName("A").uiMode(UiMode.CHARACTER).build();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any())).thenReturn(user);
+
+        var result = authService.updatePreferences(userId, UiMode.SERIOUS);
+
+        assertThat(result.uiMode()).isEqualTo("SERIOUS");
+        verify(userRepository).save(any(User.class));
     }
 
     // ── Logout ────────────────────────────────────────────────────────────────

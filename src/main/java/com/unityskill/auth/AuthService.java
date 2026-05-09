@@ -1,11 +1,13 @@
 package com.unityskill.auth;
 
 import com.unityskill.auth.dto.AuthUserResponse;
+import com.unityskill.auth.dto.PreferencesResponse;
 import com.unityskill.auth.dto.LoginRequest;
 import com.unityskill.auth.dto.LoginResponse;
 import com.unityskill.auth.dto.RegisterRequest;
 import com.unityskill.auth.dto.RegisterResponse;
 import com.unityskill.auth.entity.RefreshToken;
+import com.unityskill.auth.entity.UiMode;
 import com.unityskill.auth.entity.User;
 import com.unityskill.common.exception.EmailAlreadyExistsException;
 import com.unityskill.common.exception.InvalidCredentialsException;
@@ -101,7 +103,7 @@ public class AuthService {
             throw new TokenInactiveException();
         }
 
-        if (Duration.between(rt.getLastActiveAt(), Instant.now()).toHours() > 24) {
+        if (Duration.between(rt.getLastActiveAt(), Instant.now()).toDays() > refreshTokenExpiryDays) {
             refreshTokenRepository.delete(rt);
             throw new TokenInactiveException();
         }
@@ -129,6 +131,43 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
         return AuthUserResponse.from(user);
+    }
+
+    // ── Preferences ──────────────────────────────────────────────────────────
+
+    @Transactional
+    public AuthUserResponse updatePreferences(UUID userId, UiMode uiMode) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setUiMode(uiMode);
+        userRepository.save(user);
+        return AuthUserResponse.from(user);
+    }
+
+    // ── Incognito & Preferences (Story 6.6) ─────────────────────────────────
+
+    public PreferencesResponse getPreferences(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        return PreferencesResponse.from(user);
+    }
+
+    @Transactional
+    public PreferencesResponse enableIncognito(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setIncognito(true);
+        userRepository.save(user);
+        return PreferencesResponse.from(user);
+    }
+
+    @Transactional
+    public PreferencesResponse disableIncognito(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setIncognito(false);
+        userRepository.save(user);
+        return PreferencesResponse.from(user);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

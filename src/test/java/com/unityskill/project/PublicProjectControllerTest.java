@@ -1,6 +1,7 @@
 package com.unityskill.project;
 
 import com.unityskill.auth.JwtUtil;
+import com.unityskill.common.exception.ProjectNotFoundException;
 import com.unityskill.common.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -22,10 +24,13 @@ class PublicProjectControllerTest {
     @Autowired MockMvc mockMvc;
 
     @MockitoBean JwtUtil jwtUtil;
+    @MockitoBean ProjectService projectService;
 
     @Test
     void getPublicProject_withoutAuth_returns404NotUnauthorized() throws Exception {
         // AC3: public endpoint must NOT require JWT — responds with 404, not 401
+        when(projectService.getPublicProject(any(UUID.class))).thenThrow(new ProjectNotFoundException());
+
         mockMvc.perform(get("/api/v1/public/projects/{id}", UUID.randomUUID()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("PROJECT_NOT_FOUND"));
@@ -36,6 +41,7 @@ class PublicProjectControllerTest {
         // Authenticated users can also access public endpoints without rejection
         when(jwtUtil.isTokenValid("test-token")).thenReturn(true);
         when(jwtUtil.extractUserId("test-token")).thenReturn("550e8400-e29b-41d4-a716-446655440000");
+        when(projectService.getPublicProject(any(UUID.class))).thenThrow(new ProjectNotFoundException());
 
         mockMvc.perform(get("/api/v1/public/projects/{id}", UUID.randomUUID())
                         .header("Authorization", "Bearer test-token"))

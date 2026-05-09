@@ -16,11 +16,28 @@ spring:
     user:
       name: ignored
       password: ignored
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
 jwt:
   secret: ${JWT_SECRET:dev-secret-key-placeholder-minimum-256-bits-long}
-  access-token-expiry-ms: ${JWT_ACCESS_TOKEN_EXPIRY_MS:900000}
-  refresh-token-expiry-days: ${JWT_REFRESH_TOKEN_EXPIRY_DAYS:7}
+  access-token-expiry-ms: ${JWT_ACCESS_TOKEN_EXPIRY_MS}
+  refresh-token-expiry-days: ${JWT_REFRESH_TOKEN_EXPIRY_DAYS}
+
+app:
+  mail:
+    from: ${MAIL_FROM}
+    from-name: ${MAIL_FROM_NAME:unity_skill}
 
 server:
   port: ${SERVER_PORT:8080}
@@ -30,4 +47,26 @@ logging:
     org.springframework.security: DEBUG
     org.flywaydb: DEBUG
 
+github:
+  client-id: ${GITHUB_CLIENT_ID}
+  client-secret: ${GITHUB_CLIENT_SECRET}
+  redirect-uri: ${GITHUB_REDIRECT_URI}
+  webhook-endpoint-url: ${GITHUB_WEBHOOK_ENDPOINT_URL}
+  frontend-redirect-base-url: ${GITHUB_FRONTEND_REDIRECT_BASE_URL}
+
+encryption:
+  secret: ${ENCRYPTION_SECRET}
+  salt: ${ENCRYPTION_SALT}
+
 # Asia/Saigon not recognized by PostgreSQL 16, UTC forced via JDBC connection param
+
+ai:
+  # Default: gemini (free tier — no credit card needed, get key at https://aistudio.google.com/apikey)
+  # To use Anthropic Claude: set ai.provider=anthropic and provide ANTHROPIC_API_KEY
+  provider: ${AI_PROVIDER}
+  gemini:
+    api-key: ${GEMINI_API_KEY}
+    model: ${GEMINI_MODEL}
+  anthropic:
+    api-key: ${ANTHROPIC_API_KEY}
+    model: ${ANTHROPIC_MODEL}

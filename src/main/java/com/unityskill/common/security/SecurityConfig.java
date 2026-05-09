@@ -1,6 +1,9 @@
 package com.unityskill.common.security;
 
 import com.unityskill.auth.JwtUtil;
+import com.unityskill.consent.ConsentCheckFilter;
+import com.unityskill.consent.ConsentRepository;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -37,7 +40,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   ObjectProvider<ConsentRepository> consentRepoProvider) throws Exception {
+        ConsentRepository consentRepo = consentRepoProvider.getIfAvailable();
         http
             .cors(Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
@@ -62,9 +67,13 @@ public class SecurityConfig {
                     "/api/v1/auth/refresh",
                     "/api/v1/auth/logout").permitAll()
                 .requestMatchers("/api/v1/public/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/auth/github/callback").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/webhooks/github").permitAll()
+                .requestMatchers("/ws/**").permitAll()
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(new JwtAuthFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(new JwtAuthFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(new ConsentCheckFilter(consentRepo), JwtAuthFilter.class);
         return http.build();
     }
 }
