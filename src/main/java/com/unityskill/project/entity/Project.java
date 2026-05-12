@@ -34,6 +34,10 @@ public class Project {
     @Column(nullable = false)
     private ProjectVisibility visibility = ProjectVisibility.PRIVATE;
 
+    /** Short uppercase prefix used to form ticket codes, e.g. "US" → US-1, US-2 */
+    @Column(nullable = false, length = 10)
+    private String keyPrefix;
+
     private Long githubRepoId;
 
     @CreationTimestamp
@@ -43,4 +47,6 @@ public class Project {
     @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;
+
+    private Instant archivedAt;
 }

@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface TicketRepository extends JpaRepository<Ticket, UUID> {
@@ -48,4 +49,11 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
     @Transactional
     @Query("UPDATE Ticket t SET t.lastAlertedAt = :alertedAt WHERE t.id = :id")
     void updateLastAlertedAt(@Param("id") UUID id, @Param("alertedAt") Instant alertedAt);
+
+    /** Returns the highest ticket_number for a project (0 if none exist yet). */
+    @Query("SELECT COALESCE(MAX(t.ticketNumber), 0) FROM Ticket t WHERE t.projectId = :projectId")
+    int findMaxTicketNumberByProjectId(@Param("projectId") UUID projectId);
+
+    /** Looks up a ticket by its human-readable code components (project + number). */
+    Optional<Ticket> findByProjectIdAndTicketNumber(UUID projectId, int ticketNumber);
 }

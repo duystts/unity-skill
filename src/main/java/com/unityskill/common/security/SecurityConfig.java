@@ -67,7 +67,12 @@ public class SecurityConfig {
                     "/api/v1/auth/refresh",
                     "/api/v1/auth/logout").permitAll()
                 .requestMatchers("/api/v1/public/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/auth/github/callback").permitAll()
+                .requestMatchers(HttpMethod.GET,
+                    "/api/v1/auth/github/callback",
+                    "/api/v1/auth/github/login",
+                    "/api/v1/auth/github/login/callback",
+                    "/api/v1/auth/google/login",
+                    "/api/v1/auth/google/login/callback").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/webhooks/github").permitAll()
                 .requestMatchers("/ws/**").permitAll()
                 .anyRequest().authenticated()

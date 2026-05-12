@@ -29,11 +29,41 @@ public class ProjectController {
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("data", project));
     }
 
+    @GetMapping("/{projectId}")
+    public ResponseEntity<Map<String, Object>> getProject(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal String userId) {
+        ProjectResponse project = projectService.getProject(workspaceId, projectId, UUID.fromString(userId));
+        return ResponseEntity.ok(Map.of("data", project));
+    }
+
     @GetMapping
     public ResponseEntity<Map<String, Object>> listProjects(
             @PathVariable UUID workspaceId,
+            @RequestParam(defaultValue = "false") boolean archived,
             @AuthenticationPrincipal String userId) {
-        List<ProjectResponse> projects = projectService.listProjects(workspaceId, UUID.fromString(userId));
+        List<ProjectResponse> projects = archived
+            ? projectService.listArchivedProjects(workspaceId, UUID.fromString(userId))
+            : projectService.listProjects(workspaceId, UUID.fromString(userId));
         return ResponseEntity.ok(Map.of("data", projects));
+    }
+
+    @PatchMapping("/{projectId}/archive")
+    public ResponseEntity<Map<String, Object>> archiveProject(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal String userId) {
+        ProjectResponse result = projectService.archiveProject(workspaceId, projectId, UUID.fromString(userId));
+        return ResponseEntity.ok(Map.of("data", result));
+    }
+
+    @PatchMapping("/{projectId}/unarchive")
+    public ResponseEntity<Map<String, Object>> unarchiveProject(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal String userId) {
+        ProjectResponse result = projectService.unarchiveProject(workspaceId, projectId, UUID.fromString(userId));
+        return ResponseEntity.ok(Map.of("data", result));
     }
 }

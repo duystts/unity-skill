@@ -17,6 +17,7 @@ public class MeetingResponse {
     String title;
     Instant scheduledAt;
     String status;       // MeetingStatus name — String for forward compatibility
+    String meetingUrl;   // optional join link (Google Meet / Zoom / Teams)
     String agenda;       // null until Story 5.3
     String agendaStatus; // null until Story 5.3
     String summary;      // null until Story 5.5
@@ -40,6 +41,7 @@ public class MeetingResponse {
                 .title(m.getTitle())
                 .scheduledAt(m.getScheduledAt())
                 .status(m.getStatus().name())
+                .meetingUrl(m.getMeetingUrl())
                 .agenda(m.getAgenda())
                 .agendaStatus(m.getAgendaStatus() != null ? m.getAgendaStatus().name() : null)
                 .summary(m.getSummary())

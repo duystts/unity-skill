@@ -34,6 +34,7 @@ public class MeetingService {
                 .projectId(req.projectId())
                 .title(req.title())
                 .scheduledAt(req.scheduledAt())
+                .meetingUrl(req.meetingUrl())
                 .createdBy(callerId)
                 .build();
 
@@ -68,6 +69,10 @@ public class MeetingService {
         }
         if (req.scheduledAt() != null) {
             meeting.setScheduledAt(req.scheduledAt());
+        }
+        if (req.meetingUrl() != null) {
+            // empty string = clear the URL
+            meeting.setMeetingUrl(req.meetingUrl().isBlank() ? null : req.meetingUrl());
         }
 
         meeting = meetingRepository.save(meeting);

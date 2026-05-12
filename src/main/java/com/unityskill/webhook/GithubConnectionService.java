@@ -2,6 +2,9 @@ package com.unityskill.webhook;
 
 import com.unityskill.common.exception.GithubNotConnectedException;
 import com.unityskill.common.exception.UnauthorizedAccessException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.client.HttpClientErrorException;
 import com.unityskill.webhook.dto.GithubConnectionResponse;
 import com.unityskill.webhook.entity.GithubConnection;
 import com.unityskill.workspace.WorkspaceMemberRepository;
@@ -14,10 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 public class GithubConnectionService {
+
+    private static final Logger log = LoggerFactory.getLogger(GithubConnectionService.class);
 
     private final GithubConnectionRepository connectionRepository;
     private final WorkspaceMemberRepository memberRepository;
@@ -86,7 +92,55 @@ public class GithubConnectionService {
         String token = textEncryptor.decrypt(conn.getEncryptedOauthToken());
         String secret = UUID.randomUUID().toString();
 
-        githubApiClient.registerWebhook(token, repoFullName, webhookEndpointUrl, secret);
+        // Log token prefix for debugging (never log full token)
+        log.info("Registering webhook for repo='{}', tokenPrefix='{}'",
+                repoFullName, token.substring(0, Math.min(8, token.length())) + "...");
+
+        // Pre-check: log which GitHub account this token belongs to
+        try {
+            Map<String, Object> userInfo = githubApiClient.getGithubUserInfo(token);
+            log.info("Token belongs to GitHub user: login='{}', id={}", userInfo.get("login"), userInfo.get("id"));
+        } catch (Exception e) {
+            log.warn("Could not get user info for token: {}", e.getMessage());
+        }
+
+        // Pre-check: verify repo is accessible with this token
+        try {
+            Map<String, Object> repoInfo = githubApiClient.getRepo(token, repoFullName);
+            log.info("Repo access OK: fullName='{}', private={}, permissions={}",
+                    repoInfo.get("full_name"), repoInfo.get("private"), repoInfo.get("permissions"));
+        } catch (HttpClientErrorException.NotFound e) {
+            log.error("Pre-check 404: token cannot access repo '{}'. Body: {}", repoFullName, e.getResponseBodyAsString());
+            throw new IllegalArgumentException(
+                "Repository \"" + repoFullName + "\" not found or not accessible. " +
+                "Make sure the repo name is correct (owner/repo) and re-authorize GitHub.");
+        } catch (HttpClientErrorException e) {
+            log.warn("Pre-check {} for repo '{}': {}", e.getStatusCode(), repoFullName, e.getResponseBodyAsString());
+        }
+
+        try {
+            githubApiClient.registerWebhook(token, repoFullName, webhookEndpointUrl, secret);
+        } catch (HttpClientErrorException.NotFound e) {
+            log.error("GitHub 404 for repo='{}': {}", repoFullName, e.getResponseBodyAsString());
+            throw new IllegalArgumentException(
+                "Repository \"" + repoFullName + "\" not found. " +
+                "Check the name (format: owner/repo) and make sure you have admin access to it.");
+        } catch (HttpClientErrorException.Forbidden e) {
+            log.error("GitHub 403 for repo='{}': {}", repoFullName, e.getResponseBodyAsString());
+            throw new IllegalArgumentException(
+                "Permission denied. You need admin access to \"" + repoFullName + "\" to register webhooks.");
+        } catch (HttpClientErrorException e) {
+            log.error("GitHub {} for repo='{}': {}", e.getStatusCode().value(), repoFullName, e.getResponseBodyAsString());
+            String body = e.getResponseBodyAsString();
+            if (body.contains("localhost") || body.contains("isn't reachable")) {
+                throw new IllegalArgumentException(
+                    "Webhook URL is not reachable from the internet. " +
+                    "Use a tunnel (e.g. ngrok) to expose your local server and update GITHUB_WEBHOOK_ENDPOINT_URL.");
+            }
+            throw new IllegalArgumentException(
+                "GitHub error " + e.getStatusCode().value() + ": " + e.getStatusText() +
+                ". Re-authorize GitHub access and try again.");
+        }
 
         conn.setRepoFullName(repoFullName);
         conn.setWebhookSecret(secret);

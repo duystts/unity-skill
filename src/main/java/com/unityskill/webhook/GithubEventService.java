@@ -3,6 +3,7 @@ package com.unityskill.webhook;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unityskill.contribution.ContributionService;
+import com.unityskill.project.ProjectRepository;
 import com.unityskill.project.TicketRepository;
 import com.unityskill.project.TriggerService;
 import com.unityskill.project.entity.TriggerType;
@@ -19,11 +20,17 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class GithubEventService {
 
+    /** Legacy: branch name contains TICKET-{uuid} */
     private static final Pattern TICKET_ID_PATTERN =
         Pattern.compile("TICKET-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})",
             Pattern.CASE_INSENSITIVE);
 
+    /** New: PR title contains [PREFIX-N] e.g. "[US-3] Fix login bug" */
+    private static final Pattern PR_TITLE_CODE_PATTERN =
+        Pattern.compile("\\[([A-Za-z]{1,10})-(\\d+)\\]");
+
     private final TicketRepository ticketRepository;
+    private final ProjectRepository projectRepository;
     private final TriggerService triggerService;
     private final ObjectMapper objectMapper;
     private final ContributionService contributionService;
@@ -35,11 +42,17 @@ public class GithubEventService {
 
             if ("pull_request".equals(eventType)) {
                 String branchName = json.path("pull_request").path("head").path("ref").asText("");
-                String prUrl = json.path("pull_request").path("html_url").asText("");
-                boolean merged = json.path("pull_request").path("merged").asBoolean(false);
+                String prTitle   = json.path("pull_request").path("title").asText("");
+                String prUrl     = json.path("pull_request").path("html_url").asText("");
+                boolean merged   = json.path("pull_request").path("merged").asBoolean(false);
 
+                // 1st try: legacy branch-name pattern  TICKET-{uuid}
                 Optional<UUID> ticketId = extractTicketId(branchName);
-                if (ticketId.isEmpty()) return; // AC5: no ticket ID in branch — silently discard
+                // 2nd try: PR title pattern  [PREFIX-N]
+                if (ticketId.isEmpty()) {
+                    ticketId = extractTicketIdFromTitle(prTitle, projectId);
+                }
+                if (ticketId.isEmpty()) return; // no recognisable ticket reference — discard
 
                 if ("opened".equals(action)) {
                     handlePrOpened(ticketId.get(), prUrl, projectId);
@@ -49,7 +62,11 @@ public class GithubEventService {
 
             } else if ("pull_request_review".equals(eventType) && "submitted".equals(action)) {
                 String branchName = json.path("pull_request").path("head").path("ref").asText("");
+                String prTitle    = json.path("pull_request").path("title").asText("");
                 Optional<UUID> ticketId = extractTicketId(branchName);
+                if (ticketId.isEmpty()) {
+                    ticketId = extractTicketIdFromTitle(prTitle, projectId);
+                }
                 if (ticketId.isEmpty()) return;
                 handlePrReviewed(ticketId.get(), projectId);
             }
@@ -107,5 +124,31 @@ public class GithubEventService {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * Extracts a ticket UUID from a PR title that follows the convention:
+     *   [PREFIX-N] description   e.g. "[US-3] Fix login redirect bug"
+     *
+     * Looks up the project's keyPrefix, verifies it matches, then finds the ticket
+     * by (projectId, ticketNumber).
+     */
+    Optional<UUID> extractTicketIdFromTitle(String prTitle, UUID projectId) {
+        if (prTitle == null || prTitle.isBlank()) return Optional.empty();
+        Matcher m = PR_TITLE_CODE_PATTERN.matcher(prTitle);
+        if (!m.find()) return Optional.empty();
+
+        String parsedPrefix = m.group(1).toUpperCase();
+        int ticketNumber;
+        try {
+            ticketNumber = Integer.parseInt(m.group(2));
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+
+        return projectRepository.findById(projectId)
+            .filter(p -> parsedPrefix.equalsIgnoreCase(p.getKeyPrefix()))
+            .flatMap(p -> ticketRepository.findByProjectIdAndTicketNumber(projectId, ticketNumber))
+            .map(t -> t.getId());
     }
 }
