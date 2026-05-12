@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,18 +33,78 @@ public class ProjectService {
             .name(req.name())
             .description(req.description())
             .visibility(req.visibility())
+            .keyPrefix(generateKeyPrefix(req.name()))
             .build();
 
         project = projectRepository.saveAndFlush(project);
         return ProjectResponse.from(project);
     }
 
+    /**
+     * Auto-generates a short uppercase prefix from the project name.
+     * Takes the first letter of each word (max 6 chars).
+     * Examples: "Unity Skill" → "US", "Backend API" → "BA", "MyProject" → "MYPRO"
+     */
+    private static String generateKeyPrefix(String name) {
+        String[] words = name.trim().split("[^a-zA-Z0-9]+");
+        StringBuilder sb = new StringBuilder();
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                sb.append(Character.toUpperCase(word.charAt(0)));
+            }
+            if (sb.length() >= 6) break;
+        }
+        if (sb.isEmpty()) {
+            // Fallback: take first 4 uppercase letters from the name
+            name.chars()
+                .filter(Character::isLetter)
+                .limit(4)
+                .forEach(c -> sb.append(Character.toUpperCase((char) c)));
+        }
+        return sb.isEmpty() ? "PROJ" : sb.toString();
+    }
+
+    public ProjectResponse getProject(UUID workspaceId, UUID projectId, UUID callerId) {
+        requireMember(workspaceId, callerId);
+        Project project = projectRepository.findByIdAndWorkspaceId(projectId, workspaceId)
+            .orElseThrow(ProjectNotFoundException::new);
+        return ProjectResponse.from(project);
+    }
+
     public List<ProjectResponse> listProjects(UUID workspaceId, UUID callerId) {
         requireMember(workspaceId, callerId);
-        return projectRepository.findAllByWorkspaceId(workspaceId)
+        return projectRepository.findAllByWorkspaceIdAndArchivedAtIsNull(workspaceId)
             .stream()
             .map(ProjectResponse::from)
             .toList();
+    }
+
+    public List<ProjectResponse> listArchivedProjects(UUID workspaceId, UUID callerId) {
+        requireMember(workspaceId, callerId);
+        return projectRepository.findAllByWorkspaceIdAndArchivedAtIsNotNull(workspaceId)
+            .stream()
+            .map(ProjectResponse::from)
+            .toList();
+    }
+
+    @Transactional
+    public ProjectResponse archiveProject(UUID workspaceId, UUID projectId, UUID callerId) {
+        requirePmOrAdmin(workspaceId, callerId);
+        Project project = projectRepository.findByIdAndWorkspaceId(projectId, workspaceId)
+            .orElseThrow(ProjectNotFoundException::new);
+        project.setArchivedAt(Instant.now());
+        project = projectRepository.saveAndFlush(project);
+        return ProjectResponse.from(project);
+    }
+
+    @Transactional
+    public ProjectResponse unarchiveProject(UUID workspaceId, UUID projectId, UUID callerId) {
+        requirePmOrAdmin(workspaceId, callerId);
+        Project project = projectRepository.findByIdAndWorkspaceId(projectId, workspaceId)
+            .orElseThrow(ProjectNotFoundException::new);
+        project.setArchivedAt(null);
+        project = projectRepository.saveAndFlush(project);
+        return ProjectResponse.from(project);
     }
 
     public ProjectResponse getPublicProject(UUID projectId) {

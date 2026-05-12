@@ -35,8 +35,12 @@ public class ConsentCheckFilter extends OncePerRequestFilter {
             "/ws/"
     );
 
-    /** Exact path of the consent endpoint itself — must be accessible without consent. */
-    private static final String CONSENT_PATH = "/api/v1/users/me/consent";
+    /** Exact paths exempt from consent — must be accessible without consent. */
+    private static final Set<String> EXEMPT_EXACT = Set.of(
+            "/api/v1/users/me/consent",       // consent endpoint itself
+            "/api/v1/users/me",               // needed by dashboard layout to load user info
+            "/api/v1/users/me/display-name"   // allow updating display name during consent flow
+    );
 
     /** May be null in @WebMvcTest contexts. Filter is a no-op when null. */
     private final ConsentRepository consentRepository;
@@ -56,8 +60,8 @@ public class ConsentCheckFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
-        // Exempt: consent endpoint itself and public paths
-        if (CONSENT_PATH.equals(path) || EXEMPT_PREFIXES.stream().anyMatch(path::startsWith)) {
+        // Exempt: consent endpoint itself, /users/me, and public paths
+        if (EXEMPT_EXACT.contains(path) || EXEMPT_PREFIXES.stream().anyMatch(path::startsWith)) {
             filterChain.doFilter(request, response);
             return;
         }

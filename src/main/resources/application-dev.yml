@@ -47,12 +47,26 @@ logging:
     org.springframework.security: DEBUG
     org.flywaydb: DEBUG
 
+google:
+  client-id: ${GOOGLE_CLIENT_ID}
+  client-secret: ${GOOGLE_CLIENT_SECRET}
+  redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:8080/api/v1/auth/google/login/callback}
+  frontend-redirect-base-url: ${GOOGLE_FRONTEND_REDIRECT_BASE_URL:http://localhost:3000}
+
 github:
+  # Project-connect OAuth App (callback: /api/v1/auth/github/callback)
   client-id: ${GITHUB_CLIENT_ID}
   client-secret: ${GITHUB_CLIENT_SECRET}
   redirect-uri: ${GITHUB_REDIRECT_URI}
+  # Login OAuth App (separate app — callback: /api/v1/auth/github/login/callback)
+  login-client-id: ${GITHUB_LOGIN_CLIENT_ID}
+  login-client-secret: ${GITHUB_LOGIN_CLIENT_SECRET}
+  login-redirect-uri: ${GITHUB_LOGIN_REDIRECT_URI:http://localhost:8080/api/v1/auth/github/login/callback}
   webhook-endpoint-url: ${GITHUB_WEBHOOK_ENDPOINT_URL}
-  frontend-redirect-base-url: ${GITHUB_FRONTEND_REDIRECT_BASE_URL}
+  frontend-redirect-base-url: ${GITHUB_FRONTEND_REDIRECT_BASE_URL:http://localhost:3000}
+
+auth:
+  cookie-secure: ${AUTH_COOKIE_SECURE:false}
 
 encryption:
   secret: ${ENCRYPTION_SECRET}

@@ -8,7 +8,9 @@ public record ProjectResponse(
     String name,
     String description,
     String visibility,
-    String createdAt
+    String keyPrefix,
+    String createdAt,
+    String archivedAt
 ) {
     public static ProjectResponse from(Project p) {
         return new ProjectResponse(
@@ -17,7 +19,9 @@ public record ProjectResponse(
             p.getName(),
             p.getDescription(),
             p.getVisibility().name(),
-            p.getCreatedAt().toString()
+            p.getKeyPrefix(),
+            p.getCreatedAt().toString(),
+            p.getArchivedAt() != null ? p.getArchivedAt().toString() : null
         );
     }
 }

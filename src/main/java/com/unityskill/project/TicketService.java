@@ -28,14 +28,25 @@ import java.util.UUID;
 public class TicketService {
 
     private final TicketRepository ticketRepository;
+    private final ProjectRepository projectRepository;
     private final WorkflowStageRepository stageRepository;
     private final WorkspaceMemberRepository memberRepository;
     private final WebSocketEventPublisher eventPublisher;
     private final NotificationService notificationService;
 
+    /** Resolves the keyPrefix for a project, falling back to "PROJ" if not found. */
+    private String keyPrefixFor(UUID projectId) {
+        return projectRepository.findById(projectId)
+            .map(p -> p.getKeyPrefix())
+            .orElse("PROJ");
+    }
+
     @Transactional
     public TicketResponse createTicket(CreateTicketRequest req, UUID workspaceId, UUID projectId, UUID callerId) {
         requireMember(workspaceId, callerId);
+
+        // Assign next sequential ticket number within the project (atomic within this transaction)
+        int nextNumber = ticketRepository.findMaxTicketNumberByProjectId(projectId) + 1;
 
         Ticket ticket = Ticket.builder()
             .workspaceId(workspaceId)
@@ -43,29 +54,33 @@ public class TicketService {
             .stageId(req.stageId())
             .title(req.title())
             .description(req.description())
+            .ticketNumber(nextNumber)
             .build();
 
         ticket = ticketRepository.saveAndFlush(ticket);
-        return TicketResponse.from(ticket);
+        return TicketResponse.from(ticket, keyPrefixFor(projectId));
     }
 
     public List<TicketResponse> listTickets(UUID workspaceId, UUID projectId, UUID callerId) {
         requireMember(workspaceId, callerId);
+        String prefix = keyPrefixFor(projectId);
         return ticketRepository.findAllByProjectId(projectId).stream()
-            .map(TicketResponse::from)
+            .map(t -> TicketResponse.from(t, prefix))
             .toList();
     }
 
     public List<TicketResponse> listOpenPoolTickets(UUID workspaceId, UUID projectId, UUID callerId) {
         requireMember(workspaceId, callerId);
+        String prefix = keyPrefixFor(projectId);
         return ticketRepository.findAllByProjectIdAndAssignmentMode(projectId, AssignmentMode.OPEN_POOL)
-            .stream().map(TicketResponse::from).toList();
+            .stream().map(t -> TicketResponse.from(t, prefix)).toList();
     }
 
     public List<TicketResponse> listMyTickets(UUID workspaceId, UUID callerId) {
         requireMember(workspaceId, callerId);
+        // Each ticket may belong to a different project — resolve prefix per ticket
         return ticketRepository.findAllByWorkspaceIdAndAssigneeId(workspaceId, callerId)
-            .stream().map(TicketResponse::from).toList();
+            .stream().map(t -> TicketResponse.from(t, keyPrefixFor(t.getProjectId()))).toList();
     }
 
     @Transactional
@@ -136,7 +151,7 @@ public class TicketService {
             );
         }
 
-        return TicketResponse.from(ticket);
+        return TicketResponse.from(ticket, keyPrefixFor(projectId));
     }
 
     @Transactional
@@ -164,7 +179,7 @@ public class TicketService {
             Map.of("ticketId", ticketId.toString(), "claimedBy", callerId.toString())
         );
 
-        return TicketResponse.from(ticket);
+        return TicketResponse.from(ticket, keyPrefixFor(projectId));
     }
 
     @Transactional

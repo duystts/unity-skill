@@ -51,6 +51,9 @@ public class Meeting {
     @Column(columnDefinition = "TEXT")
     private String actionItems;
 
+    @Column(length = 2048)
+    private String meetingUrl;
+
     // nullable — ON DELETE SET NULL
     private UUID createdBy;
 

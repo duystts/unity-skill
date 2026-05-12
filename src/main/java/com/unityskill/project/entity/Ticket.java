@@ -44,6 +44,10 @@ public class Ticket {
     @Column(nullable = false)
     private AssignmentMode assignmentMode = AssignmentMode.NONE;
 
+    /** Sequential number within the project (1-based). Forms the ticket code: PROJECT_PREFIX-N */
+    @Column(nullable = false)
+    private int ticketNumber;
+
     private String githubPrUrl;
 
     private Instant closedAt;

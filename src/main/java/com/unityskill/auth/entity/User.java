@@ -31,6 +31,12 @@ public class User {
 
     private String avatarUrl;
 
+    @Column(name = "github_id", unique = true)
+    private String githubId;
+
+    @Column(name = "google_id", unique = true)
+    private String googleId;
+
     @Builder.Default
     @Column(nullable = false)
     private boolean isIncognito = false;

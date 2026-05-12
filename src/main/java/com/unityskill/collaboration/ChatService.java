@@ -37,7 +37,7 @@ public class ChatService {
                 .senderId(senderId)
                 .content(content)
                 .build();
-        message = chatRepository.save(message);
+        message = chatRepository.saveAndFlush(message);
 
         // Resolve display name for WebSocket payload (AC2)
         String senderName = userRepository.findById(senderId)
@@ -50,6 +50,7 @@ public class ChatService {
                 "NEW_MESSAGE",
                 Map.of(
                         "id",         message.getId().toString(),
+                        "projectId",  projectId.toString(),
                         "content",    message.getContent(),
                         "senderName", senderName,
                         "createdAt",  message.getCreatedAt().toString()
