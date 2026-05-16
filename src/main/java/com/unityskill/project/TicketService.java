@@ -33,6 +33,7 @@ public class TicketService {
     private final WorkspaceMemberRepository memberRepository;
     private final WebSocketEventPublisher eventPublisher;
     private final NotificationService notificationService;
+    private final TicketActivityService ticketActivityService;
 
     /** Resolves the keyPrefix for a project, falling back to "PROJ" if not found. */
     private String keyPrefixFor(UUID projectId) {
@@ -58,6 +59,8 @@ public class TicketService {
             .build();
 
         ticket = ticketRepository.saveAndFlush(ticket);
+        String actorName = ticketActivityService.resolveActorName(workspaceId, callerId);
+        ticketActivityService.logCreated(ticket, callerId, actorName);
         return TicketResponse.from(ticket, keyPrefixFor(projectId));
     }
 
@@ -105,6 +108,7 @@ public class TicketService {
         }
 
         // closedAt logic — only when stageId changes
+        UUID previousStageId = ticket.getStageId();
         if (req.stageId() != null && !req.stageId().equals(ticket.getStageId())) {
             ticket.setStageId(req.stageId());
             final Ticket ticketRef = ticket;
@@ -134,6 +138,12 @@ public class TicketService {
         }
 
         ticket = ticketRepository.saveAndFlush(ticket);
+
+        // Log stage change activity
+        if (req.stageId() != null && !req.stageId().equals(previousStageId)) {
+            String actorName = ticketActivityService.resolveActorName(workspaceId, callerId);
+            ticketActivityService.logStageChanged(ticket, previousStageId, req.stageId(), callerId, actorName);
+        }
 
         eventPublisher.publishToTopic(
             "/topic/workspace/" + workspaceId + "/tickets",

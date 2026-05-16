@@ -2,6 +2,7 @@ package com.unityskill.project;
 
 import com.unityskill.project.dto.CreateProjectRequest;
 import com.unityskill.project.dto.ProjectResponse;
+import com.unityskill.project.dto.TicketActivityResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final TicketActivityService ticketActivityService;
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> createProject(
@@ -47,6 +49,16 @@ public class ProjectController {
             ? projectService.listArchivedProjects(workspaceId, UUID.fromString(userId))
             : projectService.listProjects(workspaceId, UUID.fromString(userId));
         return ResponseEntity.ok(Map.of("data", projects));
+    }
+
+    @GetMapping("/{projectId}/activities")
+    public ResponseEntity<Map<String, Object>> listActivities(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal String userId) {
+        List<TicketActivityResponse> activities =
+            ticketActivityService.listProjectActivities(workspaceId, projectId);
+        return ResponseEntity.ok(Map.of("data", activities));
     }
 
     @PatchMapping("/{projectId}/archive")

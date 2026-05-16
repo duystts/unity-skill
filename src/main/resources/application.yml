@@ -32,7 +32,14 @@ management:
     health:
       show-details: when-authorized
 
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
+
 app:
+  storage:
+    limit-bytes: ${STORAGE_LIMIT_BYTES:524288000}  # 500 MB default
   cors:
     allowed-origins: http://localhost:3000
   security:

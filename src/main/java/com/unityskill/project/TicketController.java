@@ -1,6 +1,7 @@
 package com.unityskill.project;
 
 import com.unityskill.project.dto.CreateTicketRequest;
+import com.unityskill.project.dto.TicketActivityResponse;
 import com.unityskill.project.dto.TicketResponse;
 import com.unityskill.project.dto.UpdateTicketRequest;
 import com.unityskill.project.entity.AssignmentMode;
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class TicketController {
 
     private final TicketService ticketService;
+    private final TicketActivityService ticketActivityService;
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> createTicket(
@@ -74,4 +76,5 @@ public class TicketController {
         TicketResponse ticket = ticketService.claimTicket(workspaceId, projectId, ticketId, UUID.fromString(userId));
         return ResponseEntity.ok(Map.of("data", ticket));
     }
+
 }

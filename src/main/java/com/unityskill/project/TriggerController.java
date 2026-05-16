@@ -38,4 +38,14 @@ public class TriggerController {
         List<TriggerRuleResponse> rules = triggerService.listRules(workspaceId, projectId, UUID.fromString(userId));
         return ResponseEntity.ok(Map.of("data", rules));
     }
+
+    @DeleteMapping("/api/v1/workspaces/{workspaceId}/projects/{projectId}/triggers/{ruleId}")
+    public ResponseEntity<Void> deleteRule(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID projectId,
+            @PathVariable UUID ruleId,
+            @AuthenticationPrincipal String userId) {
+        triggerService.deleteRule(workspaceId, projectId, ruleId, UUID.fromString(userId));
+        return ResponseEntity.noContent().build();
+    }
 }
