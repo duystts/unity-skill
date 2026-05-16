@@ -3,6 +3,8 @@ package com.unityskill.webhook.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -34,7 +36,7 @@ public class WebhookEvent {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String payloadJson;
 
-    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(columnDefinition = "webhook_status", nullable = false)
     private WebhookStatus status;
 

@@ -29,6 +29,7 @@ public class TriggerService {
     private final TicketRepository ticketRepository;
     private final WorkspaceMemberRepository memberRepository;
     private final WebSocketEventPublisher eventPublisher;
+    private final TicketActivityService ticketActivityService;
 
     @Transactional
     public TriggerRuleResponse createRule(
@@ -78,6 +79,7 @@ public class TriggerService {
                                  || rule.getSourceStageId().equals(ticket.getStageId()))
                     .findFirst()
                     .ifPresent(rule -> {
+                        UUID previousStageId = ticket.getStageId();
                         ticket.setStageId(rule.getTargetStageId());
                         // AC 4: auto-close if target stage is a closed state
                         stageRepository.findById(rule.getTargetStageId()).ifPresent(stage -> {
@@ -86,6 +88,7 @@ public class TriggerService {
                             }
                         });
                         ticketRepository.save(ticket);
+                        ticketActivityService.logStageChanged(ticket, previousStageId, rule.getTargetStageId(), null, "GitHub Automation");
                         // AC 2: publish WebSocket event
                         eventPublisher.publishToTopic(
                             "/topic/workspace/" + ticket.getWorkspaceId() + "/tickets",
@@ -94,6 +97,15 @@ public class TriggerService {
                         );
                     })
         );
+    }
+
+    @Transactional
+    public void deleteRule(UUID workspaceId, UUID projectId, UUID ruleId, UUID callerId) {
+        requirePmOrAdmin(workspaceId, callerId);
+        AutoTriggerRule rule = ruleRepository.findById(ruleId)
+                .filter(r -> r.getProjectId().equals(projectId) && r.getWorkspaceId().equals(workspaceId))
+                .orElseThrow(() -> new com.unityskill.common.exception.StageNotFoundException());
+        ruleRepository.delete(rule);
     }
 
     private void requirePmOrAdmin(UUID workspaceId, UUID userId) {

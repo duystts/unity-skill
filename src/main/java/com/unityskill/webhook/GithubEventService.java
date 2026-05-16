@@ -8,6 +8,8 @@ import com.unityskill.project.TicketRepository;
 import com.unityskill.project.TriggerService;
 import com.unityskill.project.entity.TriggerType;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,8 @@ import java.util.regex.Pattern;
 @Service
 @RequiredArgsConstructor
 public class GithubEventService {
+
+    private static final Logger log = LoggerFactory.getLogger(GithubEventService.class);
 
     /** Legacy: branch name contains TICKET-{uuid} */
     private static final Pattern TICKET_ID_PATTERN =
@@ -40,11 +44,15 @@ public class GithubEventService {
             JsonNode json = objectMapper.readTree(payloadJson);
             String action = json.path("action").asText();
 
+            log.info("GitHub event: type='{}', action='{}', projectId='{}'", eventType, action, projectId);
+
             if ("pull_request".equals(eventType)) {
                 String branchName = json.path("pull_request").path("head").path("ref").asText("");
                 String prTitle   = json.path("pull_request").path("title").asText("");
                 String prUrl     = json.path("pull_request").path("html_url").asText("");
                 boolean merged   = json.path("pull_request").path("merged").asBoolean(false);
+
+                log.info("PR event: action='{}', title='{}', branch='{}', merged={}", action, prTitle, branchName, merged);
 
                 // 1st try: legacy branch-name pattern  TICKET-{uuid}
                 Optional<UUID> ticketId = extractTicketId(branchName);
@@ -52,12 +60,19 @@ public class GithubEventService {
                 if (ticketId.isEmpty()) {
                     ticketId = extractTicketIdFromTitle(prTitle, projectId);
                 }
-                if (ticketId.isEmpty()) return; // no recognisable ticket reference — discard
+                if (ticketId.isEmpty()) {
+                    log.warn("No ticket found for PR title='{}', branch='{}', projectId='{}'", prTitle, branchName, projectId);
+                    return;
+                }
 
-                if ("opened".equals(action)) {
+                log.info("Matched ticketId='{}', action='{}'", ticketId.get(), action);
+
+                if ("opened".equals(action) || "reopened".equals(action)) {
                     handlePrOpened(ticketId.get(), prUrl, projectId);
                 } else if ("closed".equals(action) && merged) {
                     handlePrMerged(ticketId.get(), projectId);
+                } else if ("closed".equals(action) && !merged) {
+                    handlePrClosed(ticketId.get(), projectId);
                 }
 
             } else if ("pull_request_review".equals(eventType) && "submitted".equals(action)) {
@@ -67,13 +82,15 @@ public class GithubEventService {
                 if (ticketId.isEmpty()) {
                     ticketId = extractTicketIdFromTitle(prTitle, projectId);
                 }
-                if (ticketId.isEmpty()) return;
+                if (ticketId.isEmpty()) {
+                    log.warn("No ticket found for review PR title='{}', branch='{}'", prTitle, branchName);
+                    return;
+                }
                 handlePrReviewed(ticketId.get(), projectId);
             }
-            // Unknown event types: no-op (silently discard)
 
         } catch (Exception e) {
-            // AC5: malformed payload — log and discard silently
+            log.error("Error processing GitHub event type='{}': {}", eventType, e.getMessage(), e);
         }
     }
 
@@ -92,6 +109,12 @@ public class GithubEventService {
         ticketRepository.findById(ticketId)
             .filter(t -> t.getProjectId().equals(projectId))
             .ifPresent(ticket -> triggerService.evaluate(TriggerType.PR_REVIEWED, ticketId));
+    }
+
+    void handlePrClosed(UUID ticketId, UUID projectId) {
+        ticketRepository.findById(ticketId)
+            .filter(t -> t.getProjectId().equals(projectId))
+            .ifPresent(ticket -> triggerService.evaluate(TriggerType.PR_CLOSED, ticketId));
     }
 
     void handlePrMerged(UUID ticketId, UUID projectId) {
@@ -147,8 +170,16 @@ public class GithubEventService {
         }
 
         return projectRepository.findById(projectId)
-            .filter(p -> parsedPrefix.equalsIgnoreCase(p.getKeyPrefix()))
-            .flatMap(p -> ticketRepository.findByProjectIdAndTicketNumber(projectId, ticketNumber))
+            .filter(p -> {
+                boolean match = parsedPrefix.equalsIgnoreCase(p.getKeyPrefix());
+                log.info("Prefix check: parsedPrefix='{}', projectKeyPrefix='{}', match={}", parsedPrefix, p.getKeyPrefix(), match);
+                return match;
+            })
+            .flatMap(p -> {
+                var ticket = ticketRepository.findByProjectIdAndTicketNumber(projectId, ticketNumber);
+                log.info("Ticket lookup: projectId='{}', ticketNumber={}, found={}", projectId, ticketNumber, ticket.isPresent());
+                return ticket;
+            })
             .map(t -> t.getId());
     }
 }
