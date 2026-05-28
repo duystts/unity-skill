@@ -1,6 +1,8 @@
 package com.unityskill.ai;
 
 import com.unityskill.common.exception.AiApiUnavailableException;
+import com.unityskill.common.exception.AiRateLimitException;
+import org.springframework.web.client.HttpClientErrorException;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
@@ -84,6 +86,9 @@ public class AiPipelineService implements AiProvider {
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> content = (List<Map<String, Object>>) response.get("content");
             return (String) content.get(0).get("text");
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            log.warn("Anthropic API quota exceeded (429). Please check your API key quota.");
+            throw new AiRateLimitException("AI quota exceeded. Please try again later.");
         } catch (Exception e) {
             log.error("Anthropic API call failed: {}", e.getMessage());
             throw new AiApiUnavailableException("Anthropic API call failed: " + e.getMessage());
