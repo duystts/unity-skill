@@ -36,12 +36,14 @@ class ProjectControllerTest {
 
     private ProjectResponse sampleResponse(UUID workspaceId) {
         return new ProjectResponse(
-            UUID.randomUUID().toString(),
-            workspaceId.toString(),
-            "Test Project",
-            null,
-            "PRIVATE",
-            "2026-04-10T00:00:00Z"
+            UUID.randomUUID().toString(),  // id
+            workspaceId.toString(),        // workspaceId
+            "Test Project",                // name
+            null,                          // description
+            "PRIVATE",                     // visibility
+            "TP",                          // keyPrefix
+            "2026-04-10T00:00:00Z",        // createdAt
+            null                           // archivedAt
         );
     }
 

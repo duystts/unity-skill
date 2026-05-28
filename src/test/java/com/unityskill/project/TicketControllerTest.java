@@ -37,18 +37,20 @@ class TicketControllerTest {
 
     private TicketResponse sampleTicket(UUID workspaceId, UUID projectId) {
         return new TicketResponse(
-            UUID.randomUUID().toString(),
-            workspaceId.toString(),
-            projectId.toString(),
-            UUID.randomUUID().toString(),
-            "Fix login bug",
-            null,
-            null,
-            "NONE",
-            null,
-            null,
-            "2026-01-01T00:00:00Z",
-            "2026-01-01T00:00:00Z"
+            UUID.randomUUID().toString(),  // id
+            workspaceId.toString(),        // workspaceId
+            projectId.toString(),          // projectId
+            UUID.randomUUID().toString(),  // stageId
+            "FIX-1",                       // ticketCode
+            "Fix login bug",               // title
+            null,                          // description
+            null,                          // assigneeId
+            "NONE",                        // assignmentMode
+            null,                          // githubPrUrl
+            false,                         // hasPr
+            null,                          // closedAt
+            "2026-01-01T00:00:00Z",        // createdAt
+            "2026-01-01T00:00:00Z"         // updatedAt
         );
     }
 
