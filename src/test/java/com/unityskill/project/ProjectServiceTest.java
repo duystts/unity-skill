@@ -113,7 +113,7 @@ class ProjectServiceTest {
         Project project = buildProject(workspaceId, ProjectVisibility.PRIVATE);
 
         when(memberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)).thenReturn(true);
-        when(projectRepository.findAllByWorkspaceId(workspaceId)).thenReturn(List.of(project));
+        when(projectRepository.findAllByWorkspaceIdAndArchivedAtIsNull(workspaceId)).thenReturn(List.of(project));
 
         List<ProjectResponse> result = projectService.listProjects(workspaceId, userId);
 

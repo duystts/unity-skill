@@ -140,7 +140,7 @@ class AuthServiceTest {
                 .user(user)
                 .tokenHash("placeholder")
                 .expiresAt(Instant.now().plusSeconds(3600))
-                .lastActiveAt(Instant.now().minusSeconds(25 * 3600)) // 25 hours ago
+                .lastActiveAt(Instant.now().minusSeconds(8 * 24 * 3600)) // 8 days ago — exceeds 7-day inactivity threshold
                 .build();
 
         when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(rt));

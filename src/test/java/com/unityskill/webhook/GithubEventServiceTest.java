@@ -2,6 +2,7 @@ package com.unityskill.webhook;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unityskill.contribution.ContributionService;
+import com.unityskill.project.ProjectRepository;
 import com.unityskill.project.TicketRepository;
 import com.unityskill.project.TriggerService;
 import com.unityskill.project.entity.Ticket;
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.*;
 class GithubEventServiceTest {
 
     @Mock TicketRepository ticketRepository;
+    @Mock ProjectRepository projectRepository;
     @Mock TriggerService triggerService;
     @Mock ContributionService contributionService;
 
@@ -30,7 +32,7 @@ class GithubEventServiceTest {
 
     @BeforeEach
     void setUp() {
-        githubEventService = new GithubEventService(ticketRepository, triggerService, new ObjectMapper(), contributionService);
+        githubEventService = new GithubEventService(ticketRepository, projectRepository, triggerService, new ObjectMapper(), contributionService);
     }
 
     // --- extractTicketId ---
@@ -230,7 +232,8 @@ class GithubEventServiceTest {
 
         githubEventService.handleEvent("pull_request", payload, UUID.randomUUID(), UUID.randomUUID());
 
-        verifyNoInteractions(ticketRepository, triggerService);
+        // A closed-but-not-merged PR queries the ticket repo but must never trigger rule evaluation
+        verifyNoInteractions(triggerService);
     }
 
     @Test

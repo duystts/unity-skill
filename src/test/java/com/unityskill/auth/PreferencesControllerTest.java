@@ -29,6 +29,7 @@ class PreferencesControllerTest {
     @Autowired private ObjectMapper objectMapper;
     @MockitoBean private AuthService authService;
     @MockitoBean private JwtUtil jwtUtil;
+    @MockitoBean private UserRepository userRepository;
 
     @Test
     void updatePreferences_withValidBody_returns200() throws Exception {

@@ -71,7 +71,7 @@ class MeetingServiceTest {
         when(meetingRepository.save(any())).thenReturn(saved);
 
         CreateMeetingRequest req = new CreateMeetingRequest(
-                "Sprint Planning", projectId, Instant.now().plus(1, ChronoUnit.DAYS));
+                "Sprint Planning", projectId, Instant.now().plus(1, ChronoUnit.DAYS), null);
 
         MeetingResponse response = meetingService.createMeeting(workspaceId, callerId, req);
 
@@ -85,7 +85,7 @@ class MeetingServiceTest {
     void createMeeting_nonMember_throwsUnauthorized() {
         when(memberRepository.existsByWorkspaceIdAndUserId(workspaceId, callerId)).thenReturn(false);
         assertThatThrownBy(() -> meetingService.createMeeting(workspaceId, callerId,
-                new CreateMeetingRequest("Meeting", projectId, Instant.now())))
+                new CreateMeetingRequest("Meeting", projectId, Instant.now(), null)))
                 .isInstanceOf(UnauthorizedAccessException.class);
         verifyNoInteractions(meetingRepository);
     }
@@ -122,7 +122,7 @@ class MeetingServiceTest {
         when(meetingRepository.save(any())).thenReturn(existing);
 
         Instant newTime = Instant.now().plus(2, ChronoUnit.DAYS);
-        UpdateMeetingRequest req = new UpdateMeetingRequest("Renamed Meeting", newTime);
+        UpdateMeetingRequest req = new UpdateMeetingRequest("Renamed Meeting", newTime, null);
 
         MeetingResponse response = meetingService.updateMeeting(
                 workspaceId, existing.getId(), callerId, req);
@@ -141,7 +141,7 @@ class MeetingServiceTest {
         when(meetingRepository.save(any())).thenReturn(existing);
 
         meetingService.updateMeeting(workspaceId, existing.getId(), callerId,
-                new UpdateMeetingRequest(null, null));
+                new UpdateMeetingRequest(null, null, null));
 
         assertThat(existing.getTitle()).isEqualTo(originalTitle); // unchanged
     }
@@ -161,7 +161,7 @@ class MeetingServiceTest {
 
         assertThatThrownBy(() -> meetingService.updateMeeting(
                 workspaceId, meetingFromOtherWorkspace.getId(), callerId,
-                new UpdateMeetingRequest("title", null)))
+                new UpdateMeetingRequest("title", null, null)))
                 .isInstanceOf(MeetingNotFoundException.class);
     }
 
@@ -172,7 +172,7 @@ class MeetingServiceTest {
         when(meetingRepository.findById(unknownId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> meetingService.updateMeeting(
-                workspaceId, unknownId, callerId, new UpdateMeetingRequest("title", null)))
+                workspaceId, unknownId, callerId, new UpdateMeetingRequest("title", null, null)))
                 .isInstanceOf(MeetingNotFoundException.class);
     }
 

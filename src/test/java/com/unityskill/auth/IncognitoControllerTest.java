@@ -22,6 +22,7 @@ class IncognitoControllerTest {
 
     @MockitoBean JwtUtil jwtUtil;
     @MockitoBean AuthService authService;
+    @MockitoBean UserRepository userRepository;
 
     private static final String USER_ID     = "550e8400-e29b-41d4-a716-446655440000";
     private static final String TOKEN       = "test-token";
