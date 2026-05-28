@@ -7,6 +7,7 @@ import com.unityskill.common.exception.UnauthorizedAccessException;
 import com.unityskill.notification.NotificationService;
 import com.unityskill.notification.WebSocketEventPublisher;
 import com.unityskill.project.dto.CreateTicketRequest;
+import com.unityskill.project.TicketActivityService;
 import com.unityskill.project.dto.TicketResponse;
 import com.unityskill.project.dto.UpdateTicketRequest;
 import com.unityskill.project.entity.AssignmentMode;
@@ -35,10 +36,12 @@ import static org.mockito.Mockito.*;
 class TicketServiceTest {
 
     @Mock TicketRepository ticketRepository;
+    @Mock ProjectRepository projectRepository;
     @Mock WorkflowStageRepository stageRepository;
     @Mock WorkspaceMemberRepository memberRepository;
     @Mock WebSocketEventPublisher eventPublisher;
     @Mock NotificationService notificationService;
+    @Mock TicketActivityService ticketActivityService;
 
     @InjectMocks TicketService ticketService;
 

@@ -3,6 +3,7 @@ package com.unityskill.workspace;
 import com.unityskill.common.exception.AlreadyMemberException;
 import com.unityskill.common.exception.InvitationNotFoundException;
 import com.unityskill.common.exception.UnauthorizedAccessException;
+import com.unityskill.mail.MailService;
 import com.unityskill.workspace.dto.InvitationResponse;
 import com.unityskill.workspace.dto.InviteLinkResponse;
 import com.unityskill.workspace.entity.*;
@@ -29,6 +30,7 @@ class InvitationServiceTest {
     @Mock WorkspaceInvitationRepository invitationRepository;
     @Mock WorkspaceMemberRepository memberRepository;
     @Mock WorkspaceRepository workspaceRepository;
+    @Mock MailService mailService;
 
     @InjectMocks InvitationService invitationService;
 
@@ -82,7 +84,7 @@ class InvitationServiceTest {
         when(workspaceRepository.findById(WORKSPACE_ID))
                 .thenReturn(Optional.of(new Workspace()));
         WorkspaceInvitation saved = savedInvitation(InvitationType.EMAIL);
-        when(invitationRepository.save(any())).thenReturn(saved);
+        when(invitationRepository.saveAndFlush(any())).thenReturn(saved);
 
         InvitationResponse result = invitationService.inviteByEmail(
                 WORKSPACE_ID, "user@example.com", ADMIN_ID);
@@ -122,7 +124,6 @@ class InvitationServiceTest {
                 .thenReturn(Optional.of(adminMember()));
         when(workspaceRepository.findById(WORKSPACE_ID))
                 .thenReturn(Optional.of(new Workspace()));
-        when(invitationRepository.save(any())).thenReturn(savedInvitation(InvitationType.LINK));
 
         InviteLinkResponse result = invitationService.generateInviteLink(WORKSPACE_ID, ADMIN_ID);
 

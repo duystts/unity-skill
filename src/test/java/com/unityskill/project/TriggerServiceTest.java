@@ -4,6 +4,7 @@ import com.unityskill.common.exception.InvalidTriggerException;
 import com.unityskill.common.exception.StageNotFoundException;
 import com.unityskill.common.exception.UnauthorizedAccessException;
 import com.unityskill.notification.WebSocketEventPublisher;
+import com.unityskill.project.TicketActivityService;
 import com.unityskill.project.dto.CreateTriggerRuleRequest;
 import com.unityskill.project.dto.TriggerRuleResponse;
 import com.unityskill.project.entity.AutoTriggerRule;
@@ -38,6 +39,7 @@ class TriggerServiceTest {
     @Mock TicketRepository ticketRepository;
     @Mock WorkspaceMemberRepository memberRepository;
     @Mock WebSocketEventPublisher eventPublisher;
+    @Mock TicketActivityService ticketActivityService;
 
     @InjectMocks TriggerService triggerService;
 

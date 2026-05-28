@@ -69,7 +69,7 @@ class ChatServiceTest {
     void sendMessage_member_persistsAndPublishesAndReturnsResponse() {
         ChatMessage saved = savedMessage();
         when(memberRepository.existsByWorkspaceIdAndUserId(workspaceId, senderId)).thenReturn(true);
-        when(chatRepository.save(any())).thenReturn(saved);
+        when(chatRepository.saveAndFlush(any())).thenReturn(saved);
         when(userRepository.findById(senderId)).thenReturn(Optional.of(user(senderId, "Alice")));
 
         ChatMessageResponse response = chatService.sendMessage(workspaceId, projectId, senderId, "Hello team");
@@ -78,7 +78,7 @@ class ChatServiceTest {
         assertThat(response.getSenderName()).isEqualTo("Alice");
         assertThat(response.getContent()).isEqualTo("Hello team");
 
-        verify(chatRepository).save(any(ChatMessage.class));
+        verify(chatRepository).saveAndFlush(any(ChatMessage.class));
         verify(wsPublisher).publishToTopic(
                 eq("/topic/workspace/" + workspaceId + "/chat"),
                 eq("NEW_MESSAGE"),
@@ -97,7 +97,7 @@ class ChatServiceTest {
     void sendMessage_webSocketPayloadContainsExpectedFields() {
         ChatMessage saved = savedMessage();
         when(memberRepository.existsByWorkspaceIdAndUserId(workspaceId, senderId)).thenReturn(true);
-        when(chatRepository.save(any())).thenReturn(saved);
+        when(chatRepository.saveAndFlush(any())).thenReturn(saved);
         when(userRepository.findById(senderId)).thenReturn(Optional.of(user(senderId, "Bob")));
 
         chatService.sendMessage(workspaceId, projectId, senderId, "Hello team");
@@ -114,7 +114,7 @@ class ChatServiceTest {
     void sendMessage_senderNotFoundInUserRepo_usesUnknown() {
         ChatMessage saved = savedMessage();
         when(memberRepository.existsByWorkspaceIdAndUserId(workspaceId, senderId)).thenReturn(true);
-        when(chatRepository.save(any())).thenReturn(saved);
+        when(chatRepository.saveAndFlush(any())).thenReturn(saved);
         when(userRepository.findById(senderId)).thenReturn(Optional.empty());
 
         ChatMessageResponse response = chatService.sendMessage(workspaceId, projectId, senderId, "Hi");

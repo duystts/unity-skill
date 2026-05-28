@@ -232,7 +232,8 @@ class GithubEventServiceTest {
 
         githubEventService.handleEvent("pull_request", payload, UUID.randomUUID(), UUID.randomUUID());
 
-        verifyNoInteractions(ticketRepository, triggerService);
+        // A closed-but-not-merged PR queries the ticket repo but must never trigger rule evaluation
+        verifyNoInteractions(triggerService);
     }
 
     @Test
