@@ -1,0 +1,96 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, master, 'feature/**' ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: unityskill_test
+          POSTGRES_USER: unityskill
+          POSTGRES_PASSWORD: unityskill_dev_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build & run tests
+        env:
+          SPRING_PROFILES_ACTIVE: dev
+          SPRING_DATASOURCE_USERNAME: unityskill
+          SPRING_DATASOURCE_PASSWORD: unityskill_dev_password
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/unityskill_test
+          SPRING_REDIS_HOST: localhost
+          SPRING_REDIS_PORT: 6379
+          JWT_SECRET: ci-secret-key-placeholder-minimum-256-bits-long-for-testing
+          JWT_ACCESS_TOKEN_EXPIRY_MS: 28800000
+          JWT_REFRESH_TOKEN_EXPIRY_DAYS: 30
+          SERVER_PORT: 8080
+          MAIL_USERNAME: ci@example.com
+          MAIL_PASSWORD: ci-password
+          MAIL_FROM: ci@example.com
+          MAIL_FROM_NAME: unity_skill
+          GITHUB_CLIENT_ID: ci-placeholder
+          GITHUB_CLIENT_SECRET: ci-placeholder
+          GITHUB_REDIRECT_URI: http://localhost:8080/api/v1/auth/github/callback
+          GITHUB_LOGIN_CLIENT_ID: ci-placeholder
+          GITHUB_LOGIN_CLIENT_SECRET: ci-placeholder
+          GITHUB_WEBHOOK_ENDPOINT_URL: http://localhost:8080/api/v1/webhooks/github
+          GITHUB_FRONTEND_REDIRECT_BASE_URL: http://localhost:3000
+          GOOGLE_CLIENT_ID: ci-placeholder
+          GOOGLE_CLIENT_SECRET: ci-placeholder
+          ENCRYPTION_SECRET: 0123456789abcdef0123456789abcdef
+          ENCRYPTION_SALT: deadbeef
+          AI_PROVIDER: groq
+          GROQ_API_KEY: ci-placeholder
+          GROQ_MODEL: llama-3.3-70b-versatile
+          GEMINI_API_KEY: ci-placeholder
+          GEMINI_MODEL: gemini-2.0-flash
+          ANTHROPIC_API_KEY: ci-placeholder
+          ANTHROPIC_MODEL: claude-haiku-4-5-20251001
+          CLOUDINARY_CLOUD_NAME: ci-placeholder
+          CLOUDINARY_API_KEY: ci-placeholder
+          CLOUDINARY_API_SECRET: ci-placeholder
+          STORAGE_LIMIT_BYTES: 524288000
+        run: mvn verify -B
+
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 7
