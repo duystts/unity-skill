@@ -3,6 +3,7 @@ package com.unityskill.project;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unityskill.auth.JwtUtil;
 import com.unityskill.common.security.SecurityConfig;
+import com.unityskill.project.TicketActivityService;
 import com.unityskill.project.dto.CreateProjectRequest;
 import com.unityskill.project.dto.ProjectResponse;
 import com.unityskill.project.entity.ProjectVisibility;
@@ -32,6 +33,7 @@ class ProjectControllerTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
     @MockitoBean private ProjectService projectService;
+    @MockitoBean private TicketActivityService ticketActivityService;
     @MockitoBean private JwtUtil jwtUtil;
 
     private ProjectResponse sampleResponse(UUID workspaceId) {

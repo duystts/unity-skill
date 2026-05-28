@@ -92,7 +92,7 @@ class InvitationServiceTest {
         assertThat(result.status()).isEqualTo("PENDING");
         assertThat(result.type()).isEqualTo("EMAIL");
         assertThat(result.email()).isEqualTo("user@example.com");
-        verify(invitationRepository).save(any(WorkspaceInvitation.class));
+        verify(invitationRepository).saveAndFlush(any(WorkspaceInvitation.class));
     }
 
     @Test
