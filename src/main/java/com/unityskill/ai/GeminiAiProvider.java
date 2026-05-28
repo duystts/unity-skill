@@ -1,6 +1,8 @@
 package com.unityskill.ai;
 
 import com.unityskill.common.exception.AiApiUnavailableException;
+import com.unityskill.common.exception.AiRateLimitException;
+import org.springframework.web.client.HttpClientErrorException;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
@@ -102,6 +104,10 @@ public class GeminiAiProvider implements AiProvider {
                     (List<Map<String, Object>>) content.get("parts");
             return (String) parts.get(0).get("text");
 
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            // 429 — quota exhausted; do NOT retry, surface immediately
+            log.warn("Gemini API quota exceeded (429). Please check your API key quota.");
+            throw new AiRateLimitException("AI quota exceeded. Please try again later.");
         } catch (Exception e) {
             log.error("Gemini API call failed: {}", e.getMessage());
             throw new AiApiUnavailableException("Gemini API call failed: " + e.getMessage());

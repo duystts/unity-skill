@@ -75,12 +75,17 @@ encryption:
 # Asia/Saigon not recognized by PostgreSQL 16, UTC forced via JDBC connection param
 
 ai:
-  # Default: gemini (free tier — no credit card needed, get key at https://aistudio.google.com/apikey)
-  # To use Anthropic Claude: set ai.provider=anthropic and provide ANTHROPIC_API_KEY
-  provider: ${AI_PROVIDER}
+  # Provider options:
+  #   groq      — FREE 14 400 req/day, 30 req/min — get key at https://console.groq.com  ← recommended
+  #   gemini    — FREE 1 500 req/day, 15 req/min  — get key at https://aistudio.google.com/apikey
+  #   anthropic — PAID                            — get key at https://console.anthropic.com
+  provider: ${AI_PROVIDER:groq}
+  groq:
+    api-key: ${GROQ_API_KEY:}
+    model: ${GROQ_MODEL:llama-3.3-70b-versatile}
   gemini:
-    api-key: ${GEMINI_API_KEY}
-    model: ${GEMINI_MODEL}
+    api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:gemini-2.0-flash}
   anthropic:
-    api-key: ${ANTHROPIC_API_KEY}
-    model: ${ANTHROPIC_MODEL}
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: ${ANTHROPIC_MODEL:claude-haiku-4-5-20251001}

@@ -3,6 +3,7 @@ package com.unityskill.common.exception;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -299,6 +300,47 @@ public class GlobalExceptionHandler {
             "status", 404,
             "error", "SKILL_EVIDENCE_NOT_FOUND",
             "message", ex.getMessage(),
+            "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(AiRateLimitException.class)
+    public ResponseEntity<Map<String, Object>> handleAiRateLimit(AiRateLimitException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(Map.of(
+            "status", 429,
+            "error", "AI_RATE_LIMIT",
+            "message", "AI quota exceeded. Please try again in a few minutes.",
+            "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(AiApiUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleAiUnavailable(AiApiUnavailableException ex) {
+        log.warn("AI service unavailable: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
+            "status", 503,
+            "error", "AI_UNAVAILABLE",
+            "message", "AI service is temporarily unavailable. Please try again later.",
+            "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex) {
+        // Storage quota exceeded (from AttachmentService) surfaces as IllegalStateException
+        if (ex.getMessage() != null && ex.getMessage().contains("quota")) {
+            return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(Map.of(
+                "status", 413,
+                "error", "STORAGE_QUOTA_EXCEEDED",
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+            ));
+        }
+        log.warn("Illegal state: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+            "status", 400,
+            "error", "BAD_REQUEST",
+            "message", ex.getMessage() != null ? ex.getMessage() : "Invalid operation",
             "timestamp", Instant.now().toString()
         ));
     }
