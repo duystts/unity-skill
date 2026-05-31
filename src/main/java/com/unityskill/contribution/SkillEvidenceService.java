@@ -142,10 +142,12 @@ public class SkillEvidenceService {
     }
 
     /**
-     * Returns the caller's private skill profile: all APPROVED evidence grouped by
-     * skill_category, each group ordered by reviewed_at descending.
-     * AC2: always returns caller's OWN data — 403 if not a workspace member.
+     * Returns the caller's private skill profile scoped to a single workspace.
+     * Kept for backward compatibility — prefer {@link #getGlobalSkillProfile(UUID)}.
+     *
+     * @deprecated workspace-scoped profile is misleading; use getGlobalSkillProfile instead.
      */
+    @Deprecated
     public SkillProfileResponse getSkillProfile(UUID workspaceId, UUID callerId) {
         if (!memberRepository.existsByWorkspaceIdAndUserId(workspaceId, callerId)) {
             throw new UnauthorizedAccessException("Not a member of workspace " + workspaceId);
@@ -153,8 +155,6 @@ public class SkillEvidenceService {
         List<SkillEvidence> approved = skillEvidenceRepository
                 .findAllByUserIdAndWorkspaceIdAndStatus(callerId, workspaceId, EvidenceStatus.APPROVED);
 
-        // Sort by reviewedAt descending before grouping so LinkedHashMap preserves
-        // insertion order — first category = most recently reviewed
         Map<String, List<SkillEvidence>> grouped = approved.stream()
                 .sorted(Comparator.comparing(SkillEvidence::getReviewedAt,
                         Comparator.nullsLast(Comparator.reverseOrder())))
@@ -174,9 +174,55 @@ public class SkillEvidenceService {
                 ))
                 .collect(Collectors.toList());
 
-        // Story 7.5: include per-workspace streak in private profile
         SkillProfileResponse.StreakInfo streak = streakRepository
                 .findByUserIdAndWorkspaceId(callerId, workspaceId)
+                .map(s -> new SkillProfileResponse.StreakInfo(
+                        s.getCurrentStreakWeeks(),
+                        s.getLongestStreakWeeks()))
+                .orElse(null);
+
+        return new SkillProfileResponse(approved.size(), categories, streak);
+    }
+
+    /**
+     * Returns the caller's skill profile aggregated across ALL workspaces.
+     * <p>
+     * A skill profile represents what a developer can do holistically — skills accumulate
+     * from every project and workspace they contribute to. Scoping it to a single workspace
+     * produces an incomplete and misleading picture.
+     * <p>
+     * Evidence is grouped by skill_category, ordered by most-recently-reviewed first.
+     * Streak shows the best current streak across all workspaces.
+     *
+     * @param callerId the authenticated developer
+     * @return aggregated skill profile across all workspaces
+     */
+    public SkillProfileResponse getGlobalSkillProfile(UUID callerId) {
+        List<SkillEvidence> approved = skillEvidenceRepository
+                .findAllByUserIdAndStatus(callerId, EvidenceStatus.APPROVED);
+
+        Map<String, List<SkillEvidence>> grouped = approved.stream()
+                .sorted(Comparator.comparing(SkillEvidence::getReviewedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .collect(Collectors.groupingBy(
+                        SkillEvidence::getSkillCategory,
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        List<SkillProfileResponse.SkillCategoryGroup> categories = grouped.entrySet().stream()
+                .map(entry -> new SkillProfileResponse.SkillCategoryGroup(
+                        entry.getKey(),
+                        entry.getValue().size(),
+                        entry.getValue().stream()
+                                .map(SkillEvidenceResponse::from)
+                                .collect(Collectors.toList())
+                ))
+                .collect(Collectors.toList());
+
+        // Best current streak across all workspaces
+        SkillProfileResponse.StreakInfo streak = streakRepository.findAllByUserId(callerId).stream()
+                .max(Comparator.comparingInt(s -> s.getCurrentStreakWeeks()))
                 .map(s -> new SkillProfileResponse.StreakInfo(
                         s.getCurrentStreakWeeks(),
                         s.getLongestStreakWeeks()))
