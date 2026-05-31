@@ -48,6 +48,17 @@ public class NotificationService {
             .map(NotificationResponse::from);
     }
 
+    public long countUnread(UUID userId) {
+        return notificationRepository.countByUserIdAndIsReadFalse(userId);
+    }
+
+    @Transactional
+    public void markAllRead(UUID userId) {
+        var unread = notificationRepository.findAllByUserIdAndIsReadFalse(userId);
+        unread.forEach(n -> n.setRead(true));
+        notificationRepository.saveAll(unread);
+    }
+
     @Transactional
     public void markRead(UUID notificationId, UUID userId) {
         Notification notification = notificationRepository.findById(notificationId)

@@ -12,4 +12,7 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     Page<Notification> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 
     long countByUserIdAndIsReadFalse(UUID userId);
+
+    /** Used by mark-all-read — fetch all unread for a user in one query. */
+    java.util.List<Notification> findAllByUserIdAndIsReadFalse(UUID userId);
 }

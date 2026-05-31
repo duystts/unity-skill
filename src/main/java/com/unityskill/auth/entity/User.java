@@ -31,6 +31,17 @@ public class User {
 
     private String avatarUrl;
 
+    /** Short title shown on public portfolio (e.g. "Backend Lead", "Fullstack Engineer"). */
+    private String title;
+
+    /** IANA timezone identifier (e.g. "Asia/Ho_Chi_Minh"). */
+    @Builder.Default
+    private String timezone = "Asia/Ho_Chi_Minh";
+
+    /** Public bio shown on skill profile and public portfolio. */
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+
     @Column(name = "github_id", unique = true)
     private String githubId;
 

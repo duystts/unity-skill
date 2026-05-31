@@ -1,5 +1,8 @@
 package com.unityskill.project;
 
+import com.unityskill.achievement.AchievementEvaluator;
+import com.unityskill.achievement.TicketTagRepository;
+import com.unityskill.achievement.entity.TicketTag;
 import com.unityskill.common.exception.InvalidAssigneeException;
 import com.unityskill.common.exception.TicketAlreadyClaimedException;
 import com.unityskill.common.exception.TicketNotFoundException;
@@ -21,7 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +39,8 @@ public class TicketService {
     private final WebSocketEventPublisher eventPublisher;
     private final NotificationService notificationService;
     private final TicketActivityService ticketActivityService;
+    private final AchievementEvaluator achievementEvaluator;
+    private final TicketTagRepository ticketTagRepository;
 
     /** Resolves the keyPrefix for a project, falling back to "PROJ" if not found. */
     private String keyPrefixFor(UUID projectId) {
@@ -67,8 +74,19 @@ public class TicketService {
     public List<TicketResponse> listTickets(UUID workspaceId, UUID projectId, UUID callerId) {
         requireMember(workspaceId, callerId);
         String prefix = keyPrefixFor(projectId);
-        return ticketRepository.findAllByProjectId(projectId).stream()
-            .map(t -> TicketResponse.from(t, prefix))
+        List<Ticket> tickets = ticketRepository.findAllByProjectId(projectId);
+
+        // Batch-fetch all tags for these tickets in one query — avoids N+1
+        List<UUID> ticketIds = tickets.stream().map(Ticket::getId).collect(Collectors.toList());
+        Map<UUID, List<String>> tagsByTicket = ticketTagRepository.findAllByTicketIdIn(ticketIds)
+            .stream()
+            .collect(Collectors.groupingBy(
+                TicketTag::getTicketId,
+                Collectors.mapping(tag -> tag.getTag().name(), Collectors.toList())
+            ));
+
+        return tickets.stream()
+            .map(t -> TicketResponse.from(t, prefix, tagsByTicket.getOrDefault(t.getId(), List.of())))
             .toList();
     }
 
@@ -84,6 +102,26 @@ public class TicketService {
         // Each ticket may belong to a different project — resolve prefix per ticket
         return ticketRepository.findAllByWorkspaceIdAndAssigneeId(workspaceId, callerId)
             .stream().map(t -> TicketResponse.from(t, keyPrefixFor(t.getProjectId()))).toList();
+    }
+
+    /**
+     * Cross-workspace: returns all tickets assigned to the caller across every workspace.
+     * Used by the skill profile page to show holistic contribution stats without
+     * re-fetching per workspace.
+     */
+    public List<TicketResponse> listMyTicketsGlobal(UUID callerId) {
+        List<Ticket> tickets = ticketRepository.findAllByAssigneeId(callerId);
+        List<UUID> ids = tickets.stream().map(Ticket::getId).collect(Collectors.toList());
+        Map<UUID, List<String>> tagsByTicket = ticketTagRepository.findAllByTicketIdIn(ids)
+            .stream()
+            .collect(Collectors.groupingBy(
+                TicketTag::getTicketId,
+                Collectors.mapping(tag -> tag.getTag().name(), Collectors.toList())
+            ));
+        return tickets.stream()
+            .map(t -> TicketResponse.from(t, keyPrefixFor(t.getProjectId()),
+                tagsByTicket.getOrDefault(t.getId(), List.of())))
+            .toList();
     }
 
     @Transactional
@@ -145,6 +183,11 @@ public class TicketService {
             ticketActivityService.logStageChanged(ticket, previousStageId, req.stageId(), callerId, actorName);
         }
 
+        // Trigger achievement evaluation when ticket transitions to closed state
+        if (ticket.getClosedAt() != null && ticket.getAssigneeId() != null) {
+            achievementEvaluator.evaluateOnTicketClose(ticket.getAssigneeId());
+        }
+
         eventPublisher.publishToTopic(
             "/topic/workspace/" + workspaceId + "/tickets",
             "TICKET_UPDATED",
@@ -155,9 +198,16 @@ public class TicketService {
         );
 
         if (req.assigneeId() != null) {
+            String prefix = keyPrefixFor(ticket.getProjectId());
+            String code   = prefix + "-" + ticket.getTicketNumber();
             notificationService.notify(
                 req.assigneeId(), workspaceId, "TICKET_ASSIGNED",
-                Map.of("ticketId", ticketId.toString(), "title", ticket.getTitle())
+                Map.of(
+                    "ticketId",   ticketId.toString(),
+                    "ticketCode", code,
+                    "title",      ticket.getTitle(),
+                    "projectId",  ticket.getProjectId().toString()
+                )
             );
         }
 

@@ -56,4 +56,10 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
 
     /** Looks up a ticket by its human-readable code components (project + number). */
     Optional<Ticket> findByProjectIdAndTicketNumber(UUID projectId, int ticketNumber);
+
+    /**
+     * Cross-workspace: all tickets assigned to a user regardless of workspace.
+     * Used by the skill profile to show holistic contribution stats.
+     */
+    List<Ticket> findAllByAssigneeId(UUID assigneeId);
 }

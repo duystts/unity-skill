@@ -31,6 +31,21 @@ public class NotificationController {
         ));
     }
 
+    /** GET /api/v1/notifications/unread-count — lightweight poll for badge. */
+    @GetMapping("/unread-count")
+    public ResponseEntity<Map<String, Object>> unreadCount(
+            @AuthenticationPrincipal String userId) {
+        long count = notificationService.countUnread(UUID.fromString(userId));
+        return ResponseEntity.ok(Map.of("data", Map.of("count", count)));
+    }
+
+    /** PATCH /api/v1/notifications/read-all — mark all unread as read. */
+    @PatchMapping("/read-all")
+    public ResponseEntity<Void> markAllRead(@AuthenticationPrincipal String userId) {
+        notificationService.markAllRead(UUID.fromString(userId));
+        return ResponseEntity.noContent().build();
+    }
+
     @PatchMapping("/{id}/read")
     public ResponseEntity<Void> markRead(
             @PathVariable UUID id,
