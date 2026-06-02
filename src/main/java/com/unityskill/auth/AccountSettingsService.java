@@ -141,6 +141,38 @@ public class AccountSettingsService {
         log.warn("Account deleted: user {}", userId);
     }
 
+    // ── Notification preferences ─────────────────────────────────────────────
+
+    public java.util.Map<String, Boolean> getNotificationPrefs(UUID userId) {
+        User user = requireUser(userId);
+        var prefs = user.getNotificationPrefs();
+        if (prefs == null) return defaultNotifPrefs();
+        var merged = new java.util.LinkedHashMap<>(defaultNotifPrefs());
+        merged.putAll(prefs);
+        return merged;
+    }
+
+    @Transactional
+    public java.util.Map<String, Boolean> updateNotificationPrefs(
+            UUID userId, java.util.Map<String, Boolean> incoming) {
+        User user = requireUser(userId);
+        var current = user.getNotificationPrefs();
+        if (current == null) current = new java.util.LinkedHashMap<>(defaultNotifPrefs());
+        current.putAll(incoming);
+        user.setNotificationPrefs(current);
+        userRepository.save(user);
+        return current;
+    }
+
+    private java.util.Map<String, Boolean> defaultNotifPrefs() {
+        return new java.util.LinkedHashMap<>(java.util.Map.of(
+            "ticketAssigned",    true,
+            "achievementEarned", true,
+            "skillEvidence",     true,
+            "inviteAccepted",    true
+        ));
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
 
     private User requireUser(UUID userId) {

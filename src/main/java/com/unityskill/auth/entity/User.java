@@ -57,6 +57,11 @@ public class User {
     @Column(nullable = false)
     private UiMode uiMode = UiMode.CHARACTER;
 
+    /** Notification preferences as JSON. Null = all enabled. */
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private java.util.Map<String, Boolean> notificationPrefs;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
