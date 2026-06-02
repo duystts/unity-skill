@@ -1,7 +1,8 @@
 package com.unityskill.auth;
 
 import com.unityskill.auth.dto.*;
-// all DTOs in package
+import com.unityskill.attachment.CloudinaryService;
+import org.springframework.web.multipart.MultipartFile;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,7 @@ import java.util.UUID;
 public class AccountSettingsController {
 
     private final AccountSettingsService accountSettingsService;
+    private final CloudinaryService cloudinaryService;
 
     /**
      * GET /api/v1/users/me/account
@@ -50,6 +52,25 @@ public class AccountSettingsController {
             @AuthenticationPrincipal String userId) {
         AccountResponse updated = accountSettingsService.updateProfile(UUID.fromString(userId), request);
         return ResponseEntity.ok(Map.of("data", updated));
+    }
+
+    /**
+     * POST /api/v1/users/me/avatar/upload
+     * Multipart file upload — uploads to Cloudinary and sets the user's avatarUrl.
+     */
+    @PostMapping(value = "/api/v1/users/me/avatar/upload", consumes = "multipart/form-data")
+    public ResponseEntity<Map<String, Object>> uploadAvatar(
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal String userId) {
+        try {
+            var result = cloudinaryService.upload(file, "avatars/" + userId);
+            String url = (String) result.get("secure_url");
+            AccountResponse updated = accountSettingsService.updateAvatar(
+                    UUID.fromString(userId), new UpdateAvatarRequest(url));
+            return ResponseEntity.ok(Map.of("data", updated));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Failed to upload avatar: " + e.getMessage()));
+        }
     }
 
     /**
@@ -90,6 +111,29 @@ public class AccountSettingsController {
             @AuthenticationPrincipal String userId) {
         accountSettingsService.changePassword(UUID.fromString(userId), request);
         return ResponseEntity.ok(Map.of("message", "Password updated successfully"));
+    }
+
+    /**
+     * GET /api/v1/users/me/notification-prefs
+     * Returns the user's notification preferences map.
+     */
+    @GetMapping("/api/v1/users/me/notification-prefs")
+    public ResponseEntity<Map<String, Object>> getNotificationPrefs(
+            @AuthenticationPrincipal String userId) {
+        var prefs = accountSettingsService.getNotificationPrefs(UUID.fromString(userId));
+        return ResponseEntity.ok(Map.of("data", prefs));
+    }
+
+    /**
+     * PATCH /api/v1/users/me/notification-prefs
+     * Body: { "ticketAssigned": true, "achievementEarned": false, ... }
+     */
+    @PatchMapping("/api/v1/users/me/notification-prefs")
+    public ResponseEntity<Map<String, Object>> updateNotificationPrefs(
+            @RequestBody Map<String, Boolean> prefs,
+            @AuthenticationPrincipal String userId) {
+        var updated = accountSettingsService.updateNotificationPrefs(UUID.fromString(userId), prefs);
+        return ResponseEntity.ok(Map.of("data", updated));
     }
 
     /**
