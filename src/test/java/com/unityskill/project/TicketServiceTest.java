@@ -7,6 +7,7 @@ import com.unityskill.common.exception.UnauthorizedAccessException;
 import com.unityskill.notification.NotificationService;
 import com.unityskill.notification.WebSocketEventPublisher;
 import com.unityskill.project.dto.CreateTicketRequest;
+import com.unityskill.achievement.TicketTagRepository;
 import com.unityskill.project.TicketActivityService;
 import com.unityskill.project.dto.TicketResponse;
 import com.unityskill.project.dto.UpdateTicketRequest;
@@ -42,6 +43,7 @@ class TicketServiceTest {
     @Mock WebSocketEventPublisher eventPublisher;
     @Mock NotificationService notificationService;
     @Mock TicketActivityService ticketActivityService;
+    @Mock TicketTagRepository ticketTagRepository;
 
     @InjectMocks TicketService ticketService;
 
