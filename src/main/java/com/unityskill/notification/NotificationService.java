@@ -6,6 +6,7 @@ import com.unityskill.common.exception.NotificationNotFoundException;
 import com.unityskill.common.exception.UnauthorizedAccessException;
 import com.unityskill.notification.entity.Notification;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -14,8 +15,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Handles persistence and delivery of in-app notifications.
+ * <p>
+ * Notifications are stored in PostgreSQL and pushed to connected clients
+ * via WebSocket. Read-only queries use {@code readOnly = true} transactions
+ * to avoid unnecessary write locks on the notifications table.
+ */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
@@ -42,12 +51,14 @@ public class NotificationService {
         webSocketEventPublisher.publishNotification(userId, type, payload);
     }
 
+    @Transactional(readOnly = true)
     public Page<NotificationResponse> getNotifications(UUID userId, int page, int size) {
         return notificationRepository
             .findByUserIdOrderByCreatedAtDesc(userId, PageRequest.of(page, size))
             .map(NotificationResponse::from);
     }
 
+    @Transactional(readOnly = true)
     public long countUnread(UUID userId) {
         return notificationRepository.countByUserIdAndIsReadFalse(userId);
     }
