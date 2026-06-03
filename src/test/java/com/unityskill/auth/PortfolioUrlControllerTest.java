@@ -1,5 +1,6 @@
 package com.unityskill.auth;
 
+import com.unityskill.attachment.CloudinaryService;
 import com.unityskill.common.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,8 @@ class PortfolioUrlControllerTest {
     @MockitoBean JwtUtil jwtUtil;
     @MockitoBean AuthService authService;
     @MockitoBean UserRepository userRepository;
+    @MockitoBean AccountSettingsService accountSettingsService;
+    @MockitoBean CloudinaryService cloudinaryService;
 
     private static final String USER_ID     = "550e8400-e29b-41d4-a716-446655440000";
     private static final String TOKEN       = "test-token";

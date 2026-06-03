@@ -3,6 +3,7 @@ package com.unityskill.auth;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unityskill.auth.dto.AuthUserResponse;
 import com.unityskill.auth.entity.UiMode;
+import com.unityskill.attachment.CloudinaryService;
 import com.unityskill.common.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,8 @@ class PreferencesControllerTest {
     @MockitoBean private AuthService authService;
     @MockitoBean private JwtUtil jwtUtil;
     @MockitoBean private UserRepository userRepository;
+    @MockitoBean private AccountSettingsService accountSettingsService;
+    @MockitoBean private CloudinaryService cloudinaryService;
 
     @Test
     void updatePreferences_withValidBody_returns200() throws Exception {
